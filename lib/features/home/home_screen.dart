@@ -22,6 +22,7 @@ class HomeScreen extends ConsumerWidget {
     final bestSellers = ref.watch(bestSellersProvider);
     final brands = ref.watch(brandsProvider);
     final cartItems = ref.watch(cartProvider);
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -68,14 +69,46 @@ class HomeScreen extends ConsumerWidget {
                 ),
             ],
           ),
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                onPressed: () => context.push('/notifications'),
+              ),
+              unreadCount.when(
+                data: (count) => count > 0
+                    ? Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            count > 9 ? '9+' : '$count',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      )
+                    : SizedBox.shrink(),
+                loading: () => SizedBox.shrink(),
+                error: (_, __) => SizedBox.shrink(),
+              ),
+            ],
+          ),
           IconButton(
             icon: Icon(Icons.search, color: AppColors.textPrimary),
             onPressed: () => context.push('/search'),
           ),
         ],
         leading: IconButton(
-          icon: Icon(Icons.menu, color: AppColors.textPrimary),
-          onPressed: () {},
+          icon: Icon(Icons.person_outline, color: AppColors.textPrimary),
+          onPressed: () => context.push('/account'),
         ),
       ),
       body: Stack(
@@ -91,57 +124,46 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   banners.when(
-                    data: (bannerList) => CarouselSlider(
-                      options: CarouselOptions(
-                        height: 200,
-                        viewportFraction: 0.95,
-                        autoPlay: true,
-                        autoPlayInterval: Duration(seconds: 4),
-                        enlargeCenterPage: true,
-                      ),
-                      items: bannerList.map((banner) {
-                        return Container(
-                          margin: EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: AppColors.sectionHeader,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                CachedNetworkImage(
-                                  imageUrl: banner.imageUrl ?? '',
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    color: AppColors.sectionHeader,
-                                  ),
-                                  errorWidget: (context, url, error) => Container(
-                                    color: AppColors.sectionHeader,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          banner.title ?? 'Shine',
-                                          style: AppTextStyles.headlineLarge,
-                                        ),
-                                        if (banner.subtitle != null)
-                                          Text(
-                                            banner.subtitle!,
-                                            style: AppTextStyles.bodyMedium,
-                                            textDirection: TextDirection.rtl,
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    data: (bannerList) {
+                      if (bannerList.isEmpty) {
+                        return _buildDefaultHeroBanner();
+                      }
+                      return CarouselSlider(
+                        options: CarouselOptions(
+                          height: 200,
+                          viewportFraction: 0.95,
+                          autoPlay: bannerList.length > 1,
+                          autoPlayInterval: Duration(seconds: 4),
+                          enlargeCenterPage: true,
+                        ),
+                        items: bannerList.map((banner) {
+                          return Container(
+                            margin: EdgeInsets.symmetric(horizontal: 4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: AppColors.sectionHeader,
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
+                                    CachedNetworkImage(
+                                      imageUrl: banner.imageUrl!,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => _buildBannerPlaceholder(banner),
+                                      errorWidget: (context, url, error) => _buildBannerPlaceholder(banner),
+                                    )
+                                  else
+                                    _buildBannerPlaceholder(banner),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
                     loading: () => Container(
                       height: 200,
                       margin: EdgeInsets.all(16),
@@ -323,6 +345,58 @@ class HomeScreen extends ConsumerWidget {
             activeIcon: Icon(Icons.person),
             label: 'حسابي',
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultHeroBanner() {
+    return Container(
+      height: 200,
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.sectionHeader,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Shine',
+              style: AppTextStyles.headlineLarge.copyWith(
+                fontWeight: FontWeight.w300,
+                letterSpacing: 3,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'اشراقة تبدأ من هنا',
+              style: AppTextStyles.bodyLarge,
+              textDirection: TextDirection.rtl,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBannerPlaceholder(dynamic banner) {
+    return Container(
+      color: AppColors.sectionHeader,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            banner.title ?? 'Shine',
+            style: AppTextStyles.headlineLarge,
+          ),
+          if (banner.subtitle != null)
+            Text(
+              banner.subtitle!,
+              style: AppTextStyles.bodyMedium,
+              textDirection: TextDirection.rtl,
+            ),
         ],
       ),
     );
