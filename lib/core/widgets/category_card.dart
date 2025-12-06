@@ -37,7 +37,7 @@ class CategoryCard extends StatelessWidget {
             ),
             child: ClipOval(
               child: CachedNetworkImage(
-                imageUrl: category.iconUrl,
+                imageUrl: category.iconUrl ?? '',
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: AppColors.divider,

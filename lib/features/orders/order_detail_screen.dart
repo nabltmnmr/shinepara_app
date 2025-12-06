@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,7 +37,7 @@ class OrderDetailScreen extends ConsumerWidget {
               child: Text(
                 'الطلب غير موجود',
                 style: AppTextStyles.bodyMedium,
-                textDirection: TextDirection.rtl,
+                textDirection: ui.TextDirection.rtl,
               ),
             );
           }
@@ -63,7 +64,7 @@ class OrderDetailScreen extends ConsumerWidget {
                           Text(
                             'حالة الطلب',
                             style: AppTextStyles.titleSmall,
-                            textDirection: TextDirection.rtl,
+                            textDirection: ui.TextDirection.rtl,
                           ),
                         ],
                       ),
@@ -91,7 +92,7 @@ class OrderDetailScreen extends ConsumerWidget {
                       Text(
                         'المنتجات',
                         style: AppTextStyles.titleSmall,
-                        textDirection: TextDirection.rtl,
+                        textDirection: ui.TextDirection.rtl,
                       ),
                       const SizedBox(height: 12),
                       if (orderData.items.isEmpty)
@@ -124,14 +125,14 @@ class OrderDetailScreen extends ConsumerWidget {
                                     Text(
                                       item.productName,
                                       style: AppTextStyles.bodyMedium,
-                                      textDirection: TextDirection.rtl,
+                                      textDirection: ui.TextDirection.rtl,
                                     ),
                                     Text(
                                       '${formatter.format(item.unitPrice)} د.ع × ${item.quantity}',
                                       style: AppTextStyles.bodySmall.copyWith(
                                         color: AppColors.textSecondary,
                                       ),
-                                      textDirection: TextDirection.rtl,
+                                      textDirection: ui.TextDirection.rtl,
                                     ),
                                   ],
                                 ),
@@ -156,7 +157,7 @@ class OrderDetailScreen extends ConsumerWidget {
                       Text(
                         'ملخص الطلب',
                         style: AppTextStyles.titleSmall,
-                        textDirection: TextDirection.rtl,
+                        textDirection: ui.TextDirection.rtl,
                       ),
                       const SizedBox(height: 12),
                       _buildPriceRow('المجموع الفرعي', orderData.subtotal, formatter),
@@ -175,7 +176,7 @@ class OrderDetailScreen extends ConsumerWidget {
                           Text(
                             'الإجمالي',
                             style: AppTextStyles.titleSmall,
-                            textDirection: TextDirection.rtl,
+                            textDirection: ui.TextDirection.rtl,
                           ),
                         ],
                       ),
@@ -199,7 +200,7 @@ class OrderDetailScreen extends ConsumerWidget {
                           Text(
                             'طريقة الدفع',
                             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                            textDirection: TextDirection.rtl,
+                            textDirection: ui.TextDirection.rtl,
                           ),
                         ],
                       ),
@@ -221,7 +222,7 @@ class OrderDetailScreen extends ConsumerWidget {
                         Text(
                           'تتبع الطلب',
                           style: AppTextStyles.titleSmall,
-                          textDirection: TextDirection.rtl,
+                          textDirection: ui.TextDirection.rtl,
                         ),
                         const SizedBox(height: 12),
                         ...orderData.statusHistory.asMap().entries.map((entry) {
@@ -243,7 +244,7 @@ class OrderDetailScreen extends ConsumerWidget {
                                         style: AppTextStyles.bodyMedium.copyWith(
                                           fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
                                         ),
-                                        textDirection: TextDirection.rtl,
+                                        textDirection: ui.TextDirection.rtl,
                                       ),
                                       Text(
                                         dateFormatter.format(history.changedAt),
@@ -257,7 +258,7 @@ class OrderDetailScreen extends ConsumerWidget {
                                           style: AppTextStyles.bodySmall.copyWith(
                                             color: AppColors.textSecondary,
                                           ),
-                                          textDirection: TextDirection.rtl,
+                                          textDirection: ui.TextDirection.rtl,
                                         ),
                                     ],
                                   ),
@@ -306,7 +307,7 @@ class OrderDetailScreen extends ConsumerWidget {
               Text(
                 'حدث خطأ في تحميل الطلب',
                 style: AppTextStyles.bodyMedium,
-                textDirection: TextDirection.rtl,
+                textDirection: ui.TextDirection.rtl,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -331,14 +332,14 @@ class OrderDetailScreen extends ConsumerWidget {
               value,
               style: AppTextStyles.bodyMedium,
               textAlign: TextAlign.left,
-              textDirection: TextDirection.rtl,
+              textDirection: ui.TextDirection.rtl,
             ),
           ),
           const SizedBox(width: 16),
           Text(
             '$label:',
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-            textDirection: TextDirection.rtl,
+            textDirection: ui.TextDirection.rtl,
           ),
         ],
       ),
@@ -358,7 +359,7 @@ class OrderDetailScreen extends ConsumerWidget {
           Text(
             label,
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-            textDirection: TextDirection.rtl,
+            textDirection: ui.TextDirection.rtl,
           ),
         ],
       ),

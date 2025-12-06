@@ -62,7 +62,7 @@ class CategoriesScreen extends ConsumerWidget {
                       ),
                       child: ClipOval(
                         child: CachedNetworkImage(
-                          imageUrl: category.iconUrl,
+                          imageUrl: category.iconUrl ?? '',
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Center(
                             child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),

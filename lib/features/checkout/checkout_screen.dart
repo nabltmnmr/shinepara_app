@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -88,13 +89,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 Text(
                   'تم إرسال طلبك بنجاح!',
                   style: AppTextStyles.titleMedium,
-                  textDirection: TextDirection.rtl,
+                  textDirection: ui.TextDirection.rtl,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'سنتواصل معك قريباً لتأكيد الطلب',
                   style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                  textDirection: TextDirection.rtl,
+                  textDirection: ui.TextDirection.rtl,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -211,7 +212,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     _error!,
                     style: TextStyle(color: Colors.red.shade700),
                     textAlign: TextAlign.center,
-                    textDirection: TextDirection.rtl,
+                    textDirection: ui.TextDirection.rtl,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -225,7 +226,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('ملخص الطلب', style: AppTextStyles.titleMedium, textDirection: TextDirection.rtl),
+                    Text('ملخص الطلب', style: AppTextStyles.titleMedium, textDirection: ui.TextDirection.rtl),
                     const SizedBox(height: 12),
                     ...cartItems.map((item) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -241,7 +242,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               '${item.product.nameAr} × ${item.quantity}',
                               style: AppTextStyles.bodyMedium,
                               textAlign: TextAlign.right,
-                              textDirection: TextDirection.rtl,
+                              textDirection: ui.TextDirection.rtl,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -264,7 +265,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   '${formatter.format(subtotal)} د.ع',
                                   style: AppTextStyles.bodyMedium,
                                 ),
-                                Text('المجموع الفرعي', style: AppTextStyles.bodyMedium, textDirection: TextDirection.rtl),
+                                Text('المجموع الفرعي', style: AppTextStyles.bodyMedium, textDirection: ui.TextDirection.rtl),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -277,7 +278,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     color: shipping > 0 ? null : Colors.green,
                                   ),
                                 ),
-                                Text('رسوم التوصيل', style: AppTextStyles.bodyMedium, textDirection: TextDirection.rtl),
+                                Text('رسوم التوصيل', style: AppTextStyles.bodyMedium, textDirection: ui.TextDirection.rtl),
                               ],
                             ),
                             if (shipping == 0 && settings.freeShippingThreshold > 0) ...[
@@ -285,7 +286,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               Text(
                                 'توصيل مجاني للطلبات أكثر من ${formatter.format(settings.freeShippingThreshold)} د.ع',
                                 style: AppTextStyles.labelSmall.copyWith(color: Colors.green),
-                                textDirection: TextDirection.rtl,
+                                textDirection: ui.TextDirection.rtl,
                               ),
                             ],
                             const Divider(height: 16),
@@ -296,7 +297,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   '${formatter.format(total)} د.ع',
                                   style: AppTextStyles.titleMedium.copyWith(color: AppColors.primary),
                                 ),
-                                Text('الإجمالي', style: AppTextStyles.titleMedium, textDirection: TextDirection.rtl),
+                                Text('الإجمالي', style: AppTextStyles.titleMedium, textDirection: ui.TextDirection.rtl),
                               ],
                             ),
                           ],
@@ -309,7 +310,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             '${formatter.format(cartNotifier.totalPrice)} د.ع',
                             style: AppTextStyles.titleMedium.copyWith(color: AppColors.primary),
                           ),
-                          Text('المجموع', style: AppTextStyles.titleMedium, textDirection: TextDirection.rtl),
+                          Text('المجموع', style: AppTextStyles.titleMedium, textDirection: ui.TextDirection.rtl),
                         ],
                       ),
                       error: (_, __) => Row(
@@ -319,7 +320,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             '${formatter.format(cartNotifier.totalPrice)} د.ع',
                             style: AppTextStyles.titleMedium.copyWith(color: AppColors.primary),
                           ),
-                          Text('المجموع', style: AppTextStyles.titleMedium, textDirection: TextDirection.rtl),
+                          Text('المجموع', style: AppTextStyles.titleMedium, textDirection: ui.TextDirection.rtl),
                         ],
                       ),
                     ),
@@ -327,7 +328,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text('معلومات التوصيل', style: AppTextStyles.titleMedium, textDirection: TextDirection.rtl),
+              Text('معلومات التوصيل', style: AppTextStyles.titleMedium, textDirection: ui.TextDirection.rtl),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _nameController,
@@ -386,12 +387,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           Text(
                             'الدفع عند الاستلام',
                             style: AppTextStyles.titleSmall.copyWith(color: Colors.green.shade800),
-                            textDirection: TextDirection.rtl,
+                            textDirection: ui.TextDirection.rtl,
                           ),
                           Text(
                             'ادفع نقداً عند استلام طلبك',
                             style: AppTextStyles.bodySmall.copyWith(color: Colors.green.shade700),
-                            textDirection: TextDirection.rtl,
+                            textDirection: ui.TextDirection.rtl,
                           ),
                         ],
                       ),
@@ -451,7 +452,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       maxLines: maxLines,
       keyboardType: keyboardType,
       validator: validator,
-      textDirection: TextDirection.rtl,
+      textDirection: ui.TextDirection.rtl,
       textAlign: TextAlign.right,
       decoration: InputDecoration(
         labelText: label,

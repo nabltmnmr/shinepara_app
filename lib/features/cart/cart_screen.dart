@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,8 +34,10 @@ class CartScreen extends ConsumerWidget {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('تفريغ السلة', textDirection: TextDirection.rtl),
-                    content: const Text('هل تريد حذف جميع المنتجات من السلة؟', textDirection: TextDirection.rtl),
+                    title: const Text('تفريغ السلة', textDirection: ui.TextDirection.rtl
+),
+                    content: const Text('هل تريد حذف جميع المنتجات من السلة؟', textDirection: ui.TextDirection.rtl
+),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -65,13 +68,15 @@ class CartScreen extends ConsumerWidget {
                   Text(
                     'سلة التسوق فارغة',
                     style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
-                    textDirection: TextDirection.rtl,
+                    textDirection: ui.TextDirection.rtl
+,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'أضف بعض المنتجات للبدء',
                     style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight),
-                    textDirection: TextDirection.rtl,
+                    textDirection: ui.TextDirection.rtl
+,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -139,7 +144,8 @@ class CartScreen extends ConsumerWidget {
                               item.product.nameAr,
                               style: AppTextStyles.titleSmall,
                               textAlign: TextAlign.right,
-                              textDirection: TextDirection.rtl,
+                              textDirection: ui.TextDirection.rtl
+,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -147,14 +153,16 @@ class CartScreen extends ConsumerWidget {
                             Text(
                               '${formatter.format(item.product.displayPrice)} د.ع',
                               style: AppTextStyles.price,
-                              textDirection: TextDirection.rtl,
+                              textDirection: ui.TextDirection.rtl
+,
                             ),
                             if (item.quantity > 1) ...[
                               const SizedBox(height: 2),
                               Text(
                                 'المجموع: ${formatter.format(item.totalPrice)} د.ع',
                                 style: AppTextStyles.bodySmall,
-                                textDirection: TextDirection.rtl,
+                                textDirection: ui.TextDirection.rtl
+,
                               ),
                             ],
                           ],
@@ -217,12 +225,14 @@ class CartScreen extends ConsumerWidget {
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
-                          textDirection: TextDirection.rtl,
+                          textDirection: ui.TextDirection.rtl
+,
                         ),
                         Text(
                           'المجموع (${cartNotifier.itemCount} منتج)',
                           style: AppTextStyles.titleMedium,
-                          textDirection: TextDirection.rtl,
+                          textDirection: ui.TextDirection.rtl
+,
                         ),
                       ],
                     ),

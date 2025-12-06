@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -137,7 +138,7 @@ class ProductDetailScreen extends ConsumerWidget {
                                   Text(
                                     '${formatter.format(product.price)} د.ع',
                                     style: AppTextStyles.oldPrice,
-                                    textDirection: TextDirection.rtl,
+                                    textDirection: ui.TextDirection.rtl,
                                   ),
                                   const SizedBox(height: 4),
                                 ],
@@ -147,7 +148,7 @@ class ProductDetailScreen extends ConsumerWidget {
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                  textDirection: TextDirection.rtl,
+                                  textDirection: ui.TextDirection.rtl,
                                 ),
                               ],
                             ),
@@ -156,7 +157,7 @@ class ProductDetailScreen extends ConsumerWidget {
                                 product.nameAr,
                                 style: AppTextStyles.headlineSmall,
                                 textAlign: TextAlign.right,
-                                textDirection: TextDirection.rtl,
+                                textDirection: ui.TextDirection.rtl,
                               ),
                             ),
                           ],
@@ -172,7 +173,7 @@ class ProductDetailScreen extends ConsumerWidget {
                             child: Text(
                               'خصم ${product.discountPercentage.toInt()}%',
                               style: AppTextStyles.labelMedium.copyWith(color: AppColors.error),
-                              textDirection: TextDirection.rtl,
+                              textDirection: ui.TextDirection.rtl,
                             ),
                           ),
                         const SizedBox(height: 24),
@@ -251,7 +252,7 @@ class ProductDetailScreen extends ConsumerWidget {
                           SnackBar(
                             content: const Text(
                               'تمت الإضافة إلى السلة',
-                              textDirection: TextDirection.rtl,
+                              textDirection: ui.TextDirection.rtl,
                             ),
                             backgroundColor: AppColors.success,
                             behavior: SnackBarBehavior.floating,
@@ -298,7 +299,7 @@ class ProductDetailScreen extends ConsumerWidget {
         Text(
           title,
           style: AppTextStyles.titleMedium,
-          textDirection: TextDirection.rtl,
+          textDirection: ui.TextDirection.rtl,
         ),
         const SizedBox(height: 8),
         Text(
@@ -308,7 +309,7 @@ class ProductDetailScreen extends ConsumerWidget {
             height: 1.6,
           ),
           textAlign: TextAlign.right,
-          textDirection: TextDirection.rtl,
+          textDirection: ui.TextDirection.rtl,
         ),
       ],
     );
@@ -324,7 +325,7 @@ class ProductDetailScreen extends ConsumerWidget {
       child: Text(
         text,
         style: AppTextStyles.labelSmall.copyWith(color: AppColors.textPrimary),
-        textDirection: TextDirection.rtl,
+        textDirection: ui.TextDirection.rtl,
       ),
     );
   }

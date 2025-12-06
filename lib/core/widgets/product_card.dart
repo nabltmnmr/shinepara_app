@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,7 +126,7 @@ class ProductCard extends ConsumerWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      textDirection: TextDirection.rtl,
+                      textDirection: ui.TextDirection.rtl,
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,

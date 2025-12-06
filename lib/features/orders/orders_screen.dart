@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -42,13 +43,13 @@ class OrdersScreen extends ConsumerWidget {
                   Text(
                     'لا توجد طلبات',
                     style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
-                    textDirection: TextDirection.rtl,
+                    textDirection: ui.TextDirection.rtl,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'ابدأ التسوق الآن!',
                     style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight),
-                    textDirection: TextDirection.rtl,
+                    textDirection: ui.TextDirection.rtl,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -93,7 +94,7 @@ class OrdersScreen extends ConsumerWidget {
               Text(
                 'حدث خطأ في تحميل الطلبات',
                 style: AppTextStyles.bodyMedium,
-                textDirection: TextDirection.rtl,
+                textDirection: ui.TextDirection.rtl,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -152,7 +153,7 @@ class _OrderCard extends StatelessWidget {
                     Text(
                       'طلب #${order.id}',
                       style: AppTextStyles.titleSmall,
-                      textDirection: TextDirection.rtl,
+                      textDirection: ui.TextDirection.rtl,
                     ),
                   ],
                 ),
@@ -167,7 +168,7 @@ class _OrderCard extends StatelessWidget {
                     Text(
                       '${formatter.format(order.total)} د.ع',
                       style: AppTextStyles.titleMedium.copyWith(color: AppColors.primary),
-                      textDirection: TextDirection.rtl,
+                      textDirection: ui.TextDirection.rtl,
                     ),
                   ],
                 ),
@@ -179,7 +180,7 @@ class _OrderCard extends StatelessWidget {
                     Text(
                       order.statusAr,
                       style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                      textDirection: TextDirection.rtl,
+                      textDirection: ui.TextDirection.rtl,
                     ),
                   ],
                 ),

@@ -112,7 +112,7 @@ class HomeScreen extends ConsumerWidget {
                               fit: StackFit.expand,
                               children: [
                                 CachedNetworkImage(
-                                  imageUrl: banner.imageUrl,
+                                  imageUrl: banner.imageUrl ?? '',
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => Container(
                                     color: AppColors.sectionHeader,
