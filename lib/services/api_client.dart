@@ -80,7 +80,7 @@ class ApiClient {
   }
 
   Future<List<Product>> getProducts({
-    int? categoryId,
+    String? categoryId,
     int? brandId,
     String? searchQuery,
   }) async {

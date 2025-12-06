@@ -1,5 +1,5 @@
 class Category {
-  final int id;
+  final String id;
   final String nameAr;
   final String nameEn;
   final String? iconUrl;
@@ -17,23 +17,23 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['id'] is String ? int.parse(json['id']) : json['id'] as int,
-      nameAr: json['name_ar'] as String? ?? json['nameAr'] as String? ?? '',
-      nameEn: json['name_en'] as String? ?? json['nameEn'] as String? ?? '',
-      iconUrl: json['icon_url'] as String? ?? json['iconUrl'] as String?,
-      imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
-      sortOrder: json['sort_order'] as int? ?? 0,
+      id: (json['id'] ?? '').toString(),
+      nameAr: json['nameAr'] as String? ?? json['name_ar'] as String? ?? '',
+      nameEn: json['nameEn'] as String? ?? json['name_en'] as String? ?? '',
+      iconUrl: json['iconUrl'] as String? ?? json['icon_url'] as String?,
+      imageUrl: json['imageUrl'] as String? ?? json['image_url'] as String?,
+      sortOrder: json['sort_order'] as int? ?? json['sortOrder'] as int? ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name_ar': nameAr,
-      'name_en': nameEn,
-      'icon_url': iconUrl,
-      'image_url': imageUrl,
-      'sort_order': sortOrder,
+      'nameAr': nameAr,
+      'nameEn': nameEn,
+      'iconUrl': iconUrl,
+      'imageUrl': imageUrl,
+      'sortOrder': sortOrder,
     };
   }
 }

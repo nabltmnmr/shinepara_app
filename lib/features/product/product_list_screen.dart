@@ -7,7 +7,7 @@ import '../../core/widgets/product_card.dart';
 import '../../services/providers.dart';
 
 class ProductListScreen extends ConsumerWidget {
-  final int? categoryId;
+  final String? categoryId;
   final int? brandId;
   final String? searchQuery;
 

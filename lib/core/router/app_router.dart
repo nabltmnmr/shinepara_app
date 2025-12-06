@@ -28,15 +28,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/products',
       builder: (context, state) {
-        final categoryIdStr = state.uri.queryParameters['categoryId'];
-        final brandIdStr = state.uri.queryParameters['brandId'];
-        final categoryId = categoryIdStr != null ? int.tryParse(categoryIdStr) : null;
-        final brandId = brandIdStr != null ? int.tryParse(brandIdStr) : null;
-        return ProductListScreen(
-          categoryId: categoryId,
-          brandId: brandId,
-        );
-      },
+    final categoryId = state.uri.queryParameters['categoryId'];  // String directly
+    final brandIdStr = state.uri.queryParameters['brandId'];
+    final brandId = brandIdStr != null ? int.tryParse(brandIdStr) : null;
+    return ProductListScreen(
+      categoryId: categoryId,  // Now String?
+      brandId: brandId,
+    );
+    },
     ),
     GoRoute(
       path: '/product/:id',

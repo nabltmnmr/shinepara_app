@@ -3,7 +3,7 @@ class Product {
   final String nameAr;
   final String nameEn;
   final int brandId;
-  final int categoryId;
+  final String categoryId;
   final String? brandName;
   final String? categoryName;
   final String descriptionAr;
@@ -41,25 +41,32 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] is String ? int.parse(json['id']) : json['id'] as int,
-      nameAr: json['name_ar'] as String? ?? json['nameAr'] as String? ?? '',
-      nameEn: json['name_en'] as String? ?? json['nameEn'] as String? ?? '',
-      brandId: json['brand_id'] is String ? int.parse(json['brand_id']) : (json['brand_id'] as int? ?? json['brandId'] as int? ?? 0),
-      categoryId: json['category_id'] is String ? int.parse(json['category_id']) : (json['category_id'] as int? ?? json['categoryId'] as int? ?? 0),
-      brandName: json['brand_name'] as String?,
-      categoryName: json['category_name'] as String?,
-      descriptionAr: json['description_ar'] as String? ?? json['descriptionAr'] as String? ?? '',
-      descriptionEn: json['description_en'] as String? ?? json['descriptionEn'] as String? ?? '',
+      id: _parseInt(json['id']),
+      nameAr: json['nameAr'] as String? ?? json['name_ar'] as String? ?? '',
+      nameEn: json['nameEn'] as String? ?? json['name_en'] as String? ?? '',
+      brandId: _parseInt(json['brandId'] ?? json['brand_id']),
+      categoryId: (json['categoryId'] ?? json['category_id'] ?? '').toString(),
+      brandName: json['brandName'] as String? ?? json['brand_name'] as String?,
+      categoryName: json['categoryName'] as String? ?? json['category_name'] as String?,
+      descriptionAr: json['descriptionAr'] as String? ?? json['description_ar'] as String? ?? json['full_description'] as String? ?? '',
+      descriptionEn: json['descriptionEn'] as String? ?? json['description_en'] as String? ?? '',
       price: _parseDouble(json['price']),
-      salePrice: json['sale_price'] != null ? _parseDouble(json['sale_price']) : null,
-      imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
+      salePrice: _parseSalePrice(json),
+      imageUrl: _parseImageUrl(json),
       stock: json['stock'] as int? ?? 0,
-      skinTypes: _parseStringList(json['skin_types'] ?? json['skinTypes']),
+      skinTypes: _parseStringList(json['skinTypes'] ?? json['skin_types']),
       concerns: _parseStringList(json['concerns']),
       usage: json['usage'] as String?,
       ingredients: json['ingredients'] as String?,
-      isActive: json['is_active'] as bool? ?? true,
+      isActive: json['is_active'] as bool? ?? json['isActive'] as bool? ?? true,
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   static double _parseDouble(dynamic value) {
@@ -68,6 +75,23 @@ class Product {
     if (value is int) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  static double? _parseSalePrice(Map<String, dynamic> json) {
+    final salePrice = json['salePrice'] ?? json['sale_price'] ?? json['oldPrice'] ?? json['old_price'];
+    if (salePrice == null) return null;
+    return _parseDouble(salePrice);
+  }
+
+  static String? _parseImageUrl(Map<String, dynamic> json) {
+    final imageUrl = json['imageUrl'] ?? json['image_url'];
+    if (imageUrl != null) return imageUrl as String;
+    
+    final images = json['images'];
+    if (images != null && images is List && images.isNotEmpty) {
+      return images[0].toString();
+    }
+    return null;
   }
 
   static List<String> _parseStringList(dynamic value) {
@@ -85,17 +109,17 @@ class Product {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name_ar': nameAr,
-      'name_en': nameEn,
-      'brand_id': brandId,
-      'category_id': categoryId,
-      'description_ar': descriptionAr,
-      'description_en': descriptionEn,
+      'nameAr': nameAr,
+      'nameEn': nameEn,
+      'brandId': brandId,
+      'categoryId': categoryId,
+      'descriptionAr': descriptionAr,
+      'descriptionEn': descriptionEn,
       'price': price,
-      'sale_price': salePrice,
-      'image_url': imageUrl,
+      'salePrice': salePrice,
+      'imageUrl': imageUrl,
       'stock': stock,
-      'skin_types': skinTypes,
+      'skinTypes': skinTypes,
       'concerns': concerns,
       'usage': usage,
       'ingredients': ingredients,

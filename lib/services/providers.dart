@@ -58,7 +58,7 @@ final shippingSettingsProvider = FutureProvider<ShippingSettings>((ref) async {
 });
 
 class ProductFilter {
-  final int? categoryId;
+  final String? categoryId;
   final int? brandId;
   final String? searchQuery;
 
