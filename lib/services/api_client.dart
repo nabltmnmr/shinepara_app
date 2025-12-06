@@ -309,7 +309,7 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.post('/api/ai/recommend', data: {
-        'message': query,
+        'query': query,
         'locale': locale,
       });
       return AIResponse.fromJson(response.data as Map<String, dynamic>);
