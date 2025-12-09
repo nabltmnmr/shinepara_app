@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/splash/splash_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/product/product_list_screen.dart';
 import '../../features/product/product_detail_screen.dart';
@@ -19,8 +20,12 @@ import '../../features/legal/privacy_policy_screen.dart';
 import '../../features/legal/terms_screen.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
     GoRoute(
       path: '/',
       builder: (context, state) => const HomeScreen(),
@@ -28,14 +33,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/products',
       builder: (context, state) {
-    final categoryId = state.uri.queryParameters['categoryId'];  // String directly
-    final brandIdStr = state.uri.queryParameters['brandId'];
-    final brandId = brandIdStr != null ? int.tryParse(brandIdStr) : null;
-    return ProductListScreen(
-      categoryId: categoryId,  // Now String?
-      brandId: brandId,
-    );
-    },
+        final categoryId = state.uri.queryParameters['categoryId'];
+        final brandIdStr = state.uri.queryParameters['brandId'];
+        final brandId = brandIdStr != null ? int.tryParse(brandIdStr) : null;
+        return ProductListScreen(
+          categoryId: categoryId,
+          brandId: brandId,
+        );
+      },
     ),
     GoRoute(
       path: '/product/:id',

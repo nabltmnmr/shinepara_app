@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,9 +23,10 @@ class ProductCard extends ConsumerWidget {
     final isInWishlist = wishlist.contains(product.id);
     final formatter = NumberFormat('#,###', 'ar');
     final imageUrl = product.imageUrl ?? '';
+    final isOutOfStock = product.stock <= 0;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isOutOfStock ? null : onTap,
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
@@ -73,6 +73,31 @@ class ProductCard extends ConsumerWidget {
                             child: Icon(Icons.image_not_supported, color: AppColors.textLight),
                           ),
                   ),
+                  if (isOutOfStock)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                        ),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade700,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'غير متوفر',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   Positioned(
                     top: 8,
                     left: 8,
@@ -90,7 +115,7 @@ class ProductCard extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  if (product.hasDiscount)
+                  if (product.hasDiscount && !isOutOfStock)
                     Positioned(
                       top: 8,
                       right: 8,
@@ -120,23 +145,42 @@ class ProductCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      product.nameAr,
-                      style: AppTextStyles.bodyMedium,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      textDirection: ui.TextDirection.rtl,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (product.nameEn.isNotEmpty)
+                          Text(
+                            product.nameEn,
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        Text(
+                          product.nameAr,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: isOutOfStock ? AppColors.textLight : AppColors.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          //textDirection: TextDirection.rtl,
+                        ),
+                      ],
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
                           'د.ع',
-                          style: AppTextStyles.labelSmall,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: isOutOfStock ? AppColors.textLight : null,
+                          ),
                         ),
                         const SizedBox(width: 4),
-                        if (product.hasDiscount) ...[
+                        if (product.hasDiscount && !isOutOfStock) ...[
                           Text(
                             formatter.format(product.price),
                             style: AppTextStyles.oldPrice,
@@ -145,7 +189,9 @@ class ProductCard extends ConsumerWidget {
                         ],
                         Text(
                           formatter.format(product.displayPrice),
-                          style: AppTextStyles.price,
+                          style: AppTextStyles.price.copyWith(
+                            color: isOutOfStock ? AppColors.textLight : null,
+                          ),
                         ),
                       ],
                     ),

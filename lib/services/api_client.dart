@@ -216,12 +216,28 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> validateCoupon(String code, double orderTotal) async {
+    try {
+      final response = await _dio.post('/api/coupons/validate', data: {
+        'code': code,
+        'orderTotal': orderTotal,
+      });
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response!.data is Map) {
+        throw Exception(e.response!.data['error'] ?? 'كود الخصم غير صالح');
+      }
+      throw Exception('كود الخصم غير صالح');
+    }
+  }
+
   Future<Order> placeOrder({
     required String customerName,
     required String customerPhone,
     required String customerLocation,
     required List<Map<String, dynamic>> items,
     String? notes,
+    String? couponCode,
   }) async {
     try {
       final response = await _dio.post('/api/orders', data: {
@@ -231,6 +247,7 @@ class ApiClient {
         'items': items,
         'notes': notes,
         'paymentMethod': 'COD',
+        if (couponCode != null) 'couponCode': couponCode,
       });
       return Order.fromJson(response.data['order'] as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -308,12 +325,20 @@ class ApiClient {
     String locale = 'ar',
   }) async {
     try {
-      final response = await _dio.post('/api/ai/recommend', data: {
-        'query': query,
-        'locale': locale,
-      });
+      final response = await _dio.post(
+        '/api/ai/recommend',
+        data: {
+          'query': query,
+          'locale': locale,
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
       return AIResponse.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
+      print('AI Error: $e');
       return _getMockAIResponse(query);
     }
   }
