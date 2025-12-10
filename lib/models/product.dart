@@ -53,7 +53,7 @@ class Product {
       price: _parseDouble(json['price']),
       salePrice: _parseSalePrice(json),
       imageUrl: _parseImageUrl(json),
-      stock: json['stock'] as int? ?? 0,
+      stock: _parseInt(json['stock']),
       skinTypes: _parseStringList(json['skinTypes'] ?? json['skin_types']),
       concerns: _parseStringList(json['concerns']),
       usage: json['usage'] as String?,

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -348,5 +349,33 @@ class ApiClient {
       answer: 'مرحباً! أنا مساعدك الذكي للعناية بالبشرة. كيف يمكنني مساعدتك اليوم؟',
       recommendations: [],
     );
+  }
+
+  Future<Response> post(String path, Map<String, dynamic> data) async {
+    return await _dio.post(path, data: data);
+  }
+
+  Future<String?> getAuthToken() async {
+    try {
+      final cookies = await cookieJar.loadForRequest(Uri.parse(baseUrl));
+      final tokenCookie = cookies.firstWhere(
+        (c) => c.name == 'customer_token',
+        orElse: () => Cookie('', ''),
+      );
+      return tokenCookie.value.isNotEmpty ? tokenCookie.value : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static ApiClient? _instance;
+
+  static ApiClient get instance {
+    _instance ??= ApiClient(baseUrl: 'https://shine-flutter-doc--nabltmnmr.replit.app');
+    return _instance!;
+  }
+
+  static void initialize(String baseUrl) {
+    _instance = ApiClient(baseUrl: baseUrl);
   }
 }
