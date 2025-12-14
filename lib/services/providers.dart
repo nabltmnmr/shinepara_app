@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../models/product.dart';
@@ -10,6 +12,7 @@ import '../models/user.dart';
 import '../models/notification.dart';
 import '../models/shipping_settings.dart';
 import '../models/ai_recommendation.dart';
+import '../models/skin_scan.dart';
 import 'api_client.dart';
 
 const String apiBaseUrl = 'https://shine-flutter-doc--nabltmnmr.replit.app';
@@ -304,3 +307,96 @@ final aiChatProvider = StateNotifierProvider<AIChatNotifier, List<ChatMessage>>(
 });
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
+
+class ScanCreditsNotifier extends StateNotifier<AsyncValue<ScanCredits>> {
+  final ApiClient apiClient;
+
+  ScanCreditsNotifier(this.apiClient) : super(const AsyncValue.loading()) {
+    _loadCredits();
+  }
+
+  Future<void> _loadCredits() async {
+    try {
+      final data = await apiClient.getScanCredits();
+      state = AsyncValue.data(ScanCredits.fromJson(data));
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> claimShareReward() async {
+    final success = await apiClient.claimShareReward();
+    if (success) {
+      await _loadCredits();
+    }
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    await _loadCredits();
+  }
+}
+
+final scanCreditsProvider = StateNotifierProvider<ScanCreditsNotifier, AsyncValue<ScanCredits>>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return ScanCreditsNotifier(apiClient);
+});
+
+final scanHistoryProvider = FutureProvider<List<SkinScan>>((ref) async {
+  final apiClient = ref.watch(apiClientProvider);
+  final data = await apiClient.getScanHistory();
+  return data.map((json) {
+    if (json.containsKey('scan')) {
+      return SkinScan.fromJson(json['scan'] as Map<String, dynamic>);
+    }
+    return SkinScan.fromJson(json);
+  }).toList();
+});
+
+final skinScanProvider = FutureProvider.family<SkinScan?, int>((ref, id) async {
+  final apiClient = ref.watch(apiClientProvider);
+  final data = await apiClient.getScanById(id);
+  if (data == null) return null;
+  return SkinScan.fromJson(data);
+});
+
+class SkinScanService {
+  final ApiClient apiClient;
+
+  SkinScanService(this.apiClient);
+
+  Future<SkinScan> analyzeSkin({
+    required File imageFile,
+    required String areaType,
+  }) async {
+    final data = await apiClient.analyzeSkin(
+      areaType: areaType,
+      imageFile: imageFile,
+    );
+    final scanData = data['scan'];
+    if (scanData is Map<String, dynamic>) {
+      return SkinScan.fromJson(scanData);
+    }
+    return SkinScan.fromJson(data);
+  }
+
+  Future<String> generateRoutine({
+    required int scanId,
+    required double budget,
+  }) async {
+    return await apiClient.generateRoutine(scanId: scanId, budget: budget);
+  }
+
+  Future<ScanComparison> compareScans({
+    required int scanId1,
+    required int scanId2,
+  }) async {
+    final data = await apiClient.compareScans(scanId1: scanId1, scanId2: scanId2);
+    return ScanComparison.fromJson(data);
+  }
+}
+
+final skinScanServiceProvider = Provider<SkinScanService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return SkinScanService(apiClient);
+});

@@ -378,4 +378,130 @@ class ApiClient {
   static void initialize(String baseUrl) {
     _instance = ApiClient(baseUrl: baseUrl);
   }
+
+  Future<Map<String, dynamic>> getScanCredits() async {
+    try {
+      final response = await _dio.get('/api/skin-scan/credits');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      return {'credits': 0, 'can_claim_share_reward': true};
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getScanHistory() async {
+    try {
+      final response = await _dio.get('/api/skin-scan/history');
+      if (response.data is List) {
+        return (response.data as List).cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> getScanById(int scanId) async {
+    try {
+      final response = await _dio.get('/api/skin-scan/$scanId');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> analyzeSkin({
+    required String areaType,
+    String? imageBase64,
+    File? imageFile,
+  }) async {
+    try {
+      FormData formData;
+      
+      if (imageFile != null) {
+        formData = FormData.fromMap({
+          'area_type': areaType,
+          'image': await MultipartFile.fromFile(
+            imageFile.path,
+            filename: 'skin_image.jpg',
+          ),
+        });
+      } else {
+        formData = FormData.fromMap({
+          'area_type': areaType,
+          if (imageBase64 != null) 'image_base64': imageBase64,
+        });
+      }
+      
+      final response = await _dio.post(
+        '/api/skin-scan/analyze',
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response!.data is Map) {
+        throw Exception(e.response!.data['error'] ?? 'فشل تحليل البشرة');
+      }
+      throw Exception('فشل تحليل البشرة');
+    }
+  }
+
+  Future<String> generateRoutine({
+    required int scanId,
+    required double budget,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/api/skin-scan/$scanId/routine',
+        data: {'budget': budget},
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+      return response.data['routine'] as String? ?? '';
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response!.data is Map) {
+        throw Exception(e.response!.data['error'] ?? 'فشل إنشاء الروتين');
+      }
+      throw Exception('فشل إنشاء الروتين');
+    }
+  }
+
+  Future<Map<String, dynamic>> compareScans({
+    required int scanId1,
+    required int scanId2,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/api/skin-scan/compare',
+        data: {
+          'scan_id_1': scanId1,
+          'scan_id_2': scanId2,
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response!.data is Map) {
+        throw Exception(e.response!.data['error'] ?? 'فشل مقارنة الفحوصات');
+      }
+      throw Exception('فشل مقارنة الفحوصات');
+    }
+  }
+
+  Future<bool> claimShareReward() async {
+    try {
+      final response = await _dio.post('/api/skin-scan/claim-share-reward');
+      return response.data['success'] as bool? ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
 }
