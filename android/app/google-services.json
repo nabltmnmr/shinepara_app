@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:480478282778:android:a94e70cf0a7d453050fda3",
+        "android_client_info": {
+          "package_name": "com.shinepara.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAiJ5IHqzBKHmGrIoimnvyfQBREl1leDUc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:480478282778:android:a54a328ce80bff6d50fda3",
         "android_client_info": {
           "package_name": "com.shinepara.shinepara_app"
