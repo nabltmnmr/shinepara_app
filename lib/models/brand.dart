@@ -3,12 +3,14 @@ class Brand {
   final String name;
   final String? logoUrl;
   final String? description;
+  final bool hasNewProducts;
 
   Brand({
     required this.id,
     required this.name,
     this.logoUrl,
     this.description,
+    this.hasNewProducts = false,
   });
 
   factory Brand.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class Brand {
       name: json['name'] as String? ?? '',
       logoUrl: json['logo_url'] as String? ?? json['logoUrl'] as String?,
       description: json['description'] as String?,
+      hasNewProducts: json['has_new_products'] as bool? ?? json['hasNewProducts'] as bool? ?? false,
     );
   }
 
@@ -26,6 +29,7 @@ class Brand {
       'name': name,
       'logo_url': logoUrl,
       'description': description,
+      'has_new_products': hasNewProducts,
     };
   }
 }

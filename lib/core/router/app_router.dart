@@ -18,6 +18,10 @@ import '../../features/orders/order_detail_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/legal/privacy_policy_screen.dart';
 import '../../features/legal/terms_screen.dart';
+import '../../features/skin_scan/skin_scan_home.dart';
+import '../../features/skin_scan/new_scan_screen.dart';
+import '../../features/skin_scan/scan_results_screen.dart';
+import '../../features/skin_scan/compare_scans_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -107,6 +111,25 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/terms',
       builder: (context, state) => const TermsScreen(),
+    ),
+    GoRoute(
+      path: '/skin-scan',
+      builder: (context, state) => const SkinScanHomeScreen(),
+    ),
+    GoRoute(
+      path: '/skin-scan/new',
+      builder: (context, state) => const NewScanScreen(),
+    ),
+    GoRoute(
+      path: '/skin-scan/results/:id',
+      builder: (context, state) {
+        final scanId = int.parse(state.pathParameters['id']!);
+        return ScanResultsScreen(scanId: scanId);
+      },
+    ),
+    GoRoute(
+      path: '/skin-scan/compare',
+      builder: (context, state) => const CompareScansScreen(),
     ),
   ],
 );

@@ -9,6 +9,7 @@ import '../../core/widgets/section_header.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/category_card.dart';
 import '../../core/widgets/brand_card.dart';
+import '../../core/widgets/brand_story_card.dart';
 import '../../core/widgets/whatsapp_button.dart';
 import '../../services/providers.dart';
 
@@ -192,6 +193,18 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 16),
+                  brands.when(
+                    data: (brandList) => _buildBrandStories(context, brandList),
+                    loading: () => SizedBox(
+                      height: 100,
+                      child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                    ),
+                    error: (error, stack) => SizedBox(
+                      height: 100,
+                      child: Center(child: Text('حدث خطأ في تحميل العلامات التجارية')),
+                    ),
+                  ),
+                  SizedBox(height: 16),
                   SectionHeader(
                     title: 'التصنيفات',
                     onViewAll: () => context.push('/categories'),
@@ -262,25 +275,6 @@ class HomeScreen extends ConsumerWidget {
                       child: Center(child: Text('حدث خطأ في تحميل المنتجات')),
                     ),
                   ),
-                  SizedBox(height: 24),
-                  SectionHeader(title: 'العلامات التجارية'),
-                  SizedBox(height: 8),
-                  brands.when(
-                    data: (brandList) => Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: brandList.map((brand) => BrandCard(
-                          brand: brand,
-                          onTap: () => context.push('/products?brandId=${brand.id}'),
-                        )).toList(),
-                      ),
-                    ),
-                    loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                    error: (error, stack) => Center(child: Text('حدث خطأ في تحميل العلامات التجارية')),
-                  ),
                   SizedBox(height: 100),
                 ],
               ),
@@ -314,13 +308,16 @@ class HomeScreen extends ConsumerWidget {
             case 0:
               break;
             case 1:
-              context.push('/categories');
+              context.go('/categories');
               break;
             case 2:
-              context.push('/wishlist');
+              context.go('/skin-scan');
               break;
             case 3:
-              context.push('/account');
+              context.go('/wishlist');
+              break;
+            case 4:
+              context.go('/account');
               break;
           }
         },
@@ -334,6 +331,11 @@ class HomeScreen extends ConsumerWidget {
             icon: Icon(Icons.category_outlined),
             activeIcon: Icon(Icons.category),
             label: 'التصنيفات',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.face_retouching_natural_outlined),
+            activeIcon: Icon(Icons.face_retouching_natural),
+            label: 'فحص البشرة',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_border),
@@ -398,6 +400,34 @@ class HomeScreen extends ConsumerWidget {
               textDirection: TextDirection.rtl,
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBrandStories(BuildContext context, List<dynamic> brandList) {
+    if (brandList.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        reverse: true,
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        itemCount: brandList.length,
+        itemBuilder: (context, index) {
+          final brand = brandList[index];
+          final hasNewProducts = brand.hasNewProducts ?? false;
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: BrandStoryCard(
+              brand: brand,
+              hasNewProducts: hasNewProducts,
+              onTap: () => context.push('/products?brandId=${brand.id}&sort=newest'),
+            ),
+          );
+        },
       ),
     );
   }
