@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/navigation_utils.dart';
 import '../../models/ai_recommendation.dart';
 import '../../services/providers.dart';
 
@@ -79,7 +80,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safeGoBack(),
         ),
         actions: [
           if (messages.isNotEmpty)

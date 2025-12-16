@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../models/brand.dart';
@@ -16,6 +18,9 @@ class ApiClient {
   final Dio _dio;
   final String baseUrl;
   final CookieJar cookieJar;
+  String? _deviceId;
+  static String? _cachedDeviceId;
+  String? _authToken;
 
   ApiClient({
     required this.baseUrl,
@@ -30,6 +35,76 @@ class ApiClient {
       'Content-Type': 'application/json',
     };
     _dio.interceptors.add(CookieManager(this.cookieJar));
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        if (_authToken == null) {
+          final prefs = await SharedPreferences.getInstance();
+          _authToken = prefs.getString('auth_token');
+        }
+        if (_authToken != null) {
+          options.headers['Cookie'] = 'customerToken=$_authToken';
+        }
+        handler.next(options);
+      },
+      onResponse: (response, handler) async {
+        final cookies = response.headers['set-cookie'];
+        if (cookies != null) {
+          for (final cookie in cookies) {
+            if (cookie.contains('customerToken=')) {
+              final match = RegExp(r'customerToken=([^;]+)').firstMatch(cookie);
+              if (match != null) {
+                _authToken = match.group(1);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('auth_token', _authToken!);
+              }
+            }
+          }
+        }
+        handler.next(response);
+      },
+    ));
+    _initDeviceId();
+    _loadAuthToken();
+  }
+  
+  Future<void> _loadAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    _authToken = prefs.getString('auth_token');
+  }
+  
+  Future<void> _initDeviceId() async {
+    if (_cachedDeviceId != null) {
+      _deviceId = _cachedDeviceId;
+      return;
+    }
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _deviceId = prefs.getString('device_id');
+      
+      if (_deviceId == null) {
+        final deviceInfo = DeviceInfoPlugin();
+        if (Platform.isAndroid) {
+          final androidInfo = await deviceInfo.androidInfo;
+          _deviceId = androidInfo.id;
+        } else if (Platform.isIOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          _deviceId = iosInfo.identifierForVendor;
+        }
+        _deviceId ??= DateTime.now().millisecondsSinceEpoch.toString();
+        await prefs.setString('device_id', _deviceId!);
+      }
+      _cachedDeviceId = _deviceId;
+    } catch (e) {
+      _deviceId = 'unknown';
+    }
+  }
+  
+  Future<String> getDeviceId() async {
+    if (_deviceId == null) {
+      await _initDeviceId();
+    }
+    return _deviceId ?? 'unknown';
   }
 
   Future<List<HomeBanner>> getBanners() async {
@@ -145,13 +220,24 @@ class ApiClient {
     required String location,
   }) async {
     try {
+      final deviceId = await getDeviceId();
       final response = await _dio.post('/api/auth/signup', data: {
         'email': email,
         'password': password,
         'fullName': fullName,
         'phone': phone,
         'location': location,
+        'deviceId': deviceId,
       });
+      
+      if (response.data['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_logged_in', true);
+        if (response.data['customer'] != null) {
+          await prefs.setInt('customer_id', response.data['customer']['id']);
+        }
+      }
+      
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {
@@ -166,10 +252,19 @@ class ApiClient {
     required String password,
   }) async {
     try {
+      final deviceId = await getDeviceId();
       final response = await _dio.post('/api/auth/login', data: {
         'email': email,
         'password': password,
+        'deviceId': deviceId,
       });
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', true);
+      if (response.data['customer'] != null) {
+        await prefs.setInt('customer_id', response.data['customer']['id']);
+      }
+      
       return User.fromJson(response.data['customer'] as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {
@@ -184,6 +279,38 @@ class ApiClient {
       await _dio.post('/api/auth/logout');
     } catch (e) {
       // Ignore logout errors
+    } finally {
+      _authToken = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      await prefs.remove('customer_id');
+      await prefs.remove('auth_token');
+    }
+  }
+  
+  Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('is_logged_in') ?? false;
+  }
+  
+  Future<bool> tryAutoLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+      if (!isLoggedIn) return false;
+      
+      final user = await getCurrentUser();
+      if (user == null) {
+        await prefs.setBool('is_logged_in', false);
+        await prefs.remove('customer_id');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      await prefs.remove('customer_id');
+      return false;
     }
   }
 

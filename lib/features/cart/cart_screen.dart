@@ -1,11 +1,11 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/navigation_utils.dart';
 import '../../services/providers.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -25,7 +25,7 @@ class CartScreen extends ConsumerWidget {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safeGoBack(),
         ),
         actions: [
           if (cartItems.isNotEmpty)
@@ -34,10 +34,8 @@ class CartScreen extends ConsumerWidget {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('تفريغ السلة', textDirection: ui.TextDirection.rtl
-),
-                    content: const Text('هل تريد حذف جميع المنتجات من السلة؟', textDirection: ui.TextDirection.rtl
-),
+                    title: const Text('تفريغ السلة', textDirection: TextDirection.rtl),
+                    content: const Text('هل تريد حذف جميع المنتجات من السلة؟', textDirection: TextDirection.rtl),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -68,15 +66,13 @@ class CartScreen extends ConsumerWidget {
                   Text(
                     'سلة التسوق فارغة',
                     style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
-                    textDirection: ui.TextDirection.rtl
-,
+                    textDirection: TextDirection.rtl,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'أضف بعض المنتجات للبدء',
                     style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight),
-                    textDirection: ui.TextDirection.rtl
-,
+                    textDirection: TextDirection.rtl,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -144,8 +140,7 @@ class CartScreen extends ConsumerWidget {
                               item.product.nameAr,
                               style: AppTextStyles.titleSmall,
                               textAlign: TextAlign.right,
-                              textDirection: ui.TextDirection.rtl
-,
+                              textDirection: TextDirection.rtl,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -153,16 +148,14 @@ class CartScreen extends ConsumerWidget {
                             Text(
                               '${formatter.format(item.product.displayPrice)} د.ع',
                               style: AppTextStyles.price,
-                              textDirection: ui.TextDirection.rtl
-,
+                              textDirection: TextDirection.rtl,
                             ),
                             if (item.quantity > 1) ...[
                               const SizedBox(height: 2),
                               Text(
                                 'المجموع: ${formatter.format(item.totalPrice)} د.ع',
                                 style: AppTextStyles.bodySmall,
-                                textDirection: ui.TextDirection.rtl
-,
+                                textDirection: TextDirection.rtl,
                               ),
                             ],
                           ],
@@ -225,14 +218,12 @@ class CartScreen extends ConsumerWidget {
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
-                          textDirection: ui.TextDirection.rtl
-,
+                          textDirection: TextDirection.rtl,
                         ),
                         Text(
                           'المجموع (${cartNotifier.itemCount} منتج)',
                           style: AppTextStyles.titleMedium,
-                          textDirection: ui.TextDirection.rtl
-,
+                          textDirection: TextDirection.rtl,
                         ),
                       ],
                     ),

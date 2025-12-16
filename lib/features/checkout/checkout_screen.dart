@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/navigation_utils.dart';
 import '../../services/providers.dart';
-import 'package:intl/intl.dart' as intl; // ✅ FIX: prefix intl to avoid TextDirection conflict
+import 'package:intl/intl.dart' hide TextDirection;
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -72,7 +73,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final apiClient = ref.read(apiClientProvider);
       final cartNotifier = ref.read(cartProvider.notifier);
       final result = await apiClient.validateCoupon(code, cartNotifier.totalPrice);
-
+      
       setState(() {
         _appliedCoupon = result['code'];
         _couponDiscount = (result['discount'] as num).toDouble();
@@ -111,13 +112,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       final cartItems = ref.read(cartProvider);
       final apiClient = ref.read(apiClientProvider);
-
-      final items = cartItems
-          .map((item) => {
-                'productId': item.productId,
-                'quantity': item.quantity,
-              })
-          .toList();
+      
+      final items = cartItems.map((item) => {
+        'productId': item.productId,
+        'quantity': item.quantity,
+      }).toList();
 
       await apiClient.placeOrder(
         customerName: _nameController.text.trim(),
@@ -151,7 +150,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 Text(
                   'تم إرسال طلبك بنجاح!',
                   style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                  textDirection: TextDirection.rtl, // ✅ now Flutter TextDirection is used
+                  textDirection: TextDirection.rtl,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -220,7 +219,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cartItems = ref.watch(cartProvider);
     final cartNotifier = ref.read(cartProvider.notifier);
     final shippingSettings = ref.watch(shippingSettingsProvider);
-    final formatter = intl.NumberFormat('#,###', 'ar'); // ✅ FIX: use intl.NumberFormat
+    final formatter = NumberFormat('#,###', 'ar');
 
     if (cartItems.isEmpty) {
       return Scaffold(
@@ -231,7 +230,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           title: Text('إتمام الطلب', style: AppTextStyles.titleLarge),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios),
-            onPressed: () => context.pop(),
+            onPressed: () => context.safeGoBack(),
           ),
         ),
         body: Center(
@@ -270,7 +269,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safeGoBack(),
         ),
       ),
       body: SingleChildScrollView(
@@ -400,33 +399,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: Column(
                   children: [
                     ...cartItems.map((item) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '${formatter.format(item.totalPrice)} د.ع',
-                                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '${item.product.nameAr} × ${item.quantity}',
-                                  style: AppTextStyles.bodyMedium,
-                                  textAlign: TextAlign.right,
-                                  textDirection: TextDirection.rtl,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${formatter.format(item.totalPrice)} د.ع',
+                            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
                           ),
-                        )),
+                          Expanded(
+                            child: Text(
+                              '${item.product.nameAr} × ${item.quantity}',
+                              style: AppTextStyles.bodyMedium,
+                              textAlign: TextAlign.right,
+                              textDirection: TextDirection.rtl,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
                     const Divider(height: 24),
                     shippingSettings.when(
                       data: (settings) {
                         final subtotal = cartNotifier.totalPrice;
                         final shipping = settings.calculateShipping(subtotal);
                         final total = subtotal + shipping - _couponDiscount;
-
+                        
                         return Column(
                           children: [
                             _buildPriceRow('المجموع الفرعي', subtotal, formatter),
@@ -669,12 +668,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPriceRow(
-    String label,
-    double amount,
-    intl.NumberFormat formatter, // ✅ FIX: formatter type now intl.NumberFormat
-    {bool isFree = false, bool isDiscount = false}
-  ) {
+  Widget _buildPriceRow(String label, double amount, NumberFormat formatter, {bool isFree = false, bool isDiscount = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

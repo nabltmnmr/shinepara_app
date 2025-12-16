@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/navigation_utils.dart';
 import '../../services/providers.dart';
 
 class CategoriesScreen extends ConsumerWidget {
@@ -21,13 +23,13 @@ class CategoriesScreen extends ConsumerWidget {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safeGoBack(),
         ),
       ),
       body: categories.when(
         data: (categoryList) => GridView.builder(
-          padding: EdgeInsets.all(16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             childAspectRatio: 1,
             crossAxisSpacing: 16,
@@ -36,6 +38,8 @@ class CategoriesScreen extends ConsumerWidget {
           itemCount: categoryList.length,
           itemBuilder: (context, index) {
             final category = categoryList[index];
+            final iconUrl = (category.iconUrl ?? '').trim();
+
             return GestureDetector(
               onTap: () => context.push('/products?categoryId=${category.id}'),
               child: Container(
@@ -46,7 +50,7 @@ class CategoriesScreen extends ConsumerWidget {
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 8,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -61,21 +65,30 @@ class CategoriesScreen extends ConsumerWidget {
                         shape: BoxShape.circle,
                       ),
                       child: ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: category.iconUrl ?? '',
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Center(
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                          ),
-                          errorWidget: (context, url, error) => Icon(
-                            Icons.category,
-                            color: AppColors.primary,
-                            size: 40,
-                          ),
-                        ),
+                        child: iconUrl.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: iconUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Icon(
+                                  Icons.category,
+                                  color: AppColors.primary,
+                                  size: 40,
+                                ),
+                              )
+                            : Icon(
+                                Icons.category,
+                                color: AppColors.primary,
+                                size: 40,
+                              ),
                       ),
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     Text(
                       category.nameAr,
                       style: AppTextStyles.titleSmall,
@@ -96,12 +109,12 @@ class CategoriesScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline, size: 64, color: AppColors.error),
-              SizedBox(height: 16),
-              Text('حدث خطأ في تحميل التصنيفات'),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
+              const Text('حدث خطأ في تحميل التصنيفات'),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.invalidate(categoriesProvider),
-                child: Text('إعادة المحاولة'),
+                child: const Text('إعادة المحاولة'),
               ),
             ],
           ),

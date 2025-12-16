@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/widgets/product_card.dart';
+import '../../core/utils/navigation_utils.dart';
 import '../../services/providers.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -34,7 +35,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         backgroundColor: AppColors.background,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safeGoBack(),
         ),
         title: TextField(
           controller: _searchController,
