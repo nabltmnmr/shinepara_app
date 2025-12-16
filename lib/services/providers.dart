@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../models/product.dart';
@@ -156,8 +155,11 @@ final wishlistProductsProvider = FutureProvider<List<Product>>((ref) async {
 class AuthNotifier extends StateNotifier<User?> {
   final ApiClient apiClient;
   bool isLoading = false;
+  bool _initialized = false;
 
   AuthNotifier(this.apiClient) : super(null);
+
+  bool get isInitialized => _initialized;
 
   Future<void> checkAuthStatus() async {
     isLoading = true;
@@ -168,6 +170,28 @@ class AuthNotifier extends StateNotifier<User?> {
       state = null;
     } finally {
       isLoading = false;
+      _initialized = true;
+    }
+  }
+  
+  Future<bool> tryAutoLogin() async {
+    if (_initialized) return state != null;
+    isLoading = true;
+    try {
+      final success = await apiClient.tryAutoLogin();
+      if (success) {
+        final user = await apiClient.getCurrentUser();
+        state = user;
+        return user != null;
+      }
+      state = null;
+      return false;
+    } catch (e) {
+      state = null;
+      return false;
+    } finally {
+      isLoading = false;
+      _initialized = true;
     }
   }
 
