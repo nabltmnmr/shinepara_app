@@ -17,12 +17,12 @@ class AIRecommendation {
 
   factory AIRecommendation.fromJson(Map<String, dynamic> json) {
     return AIRecommendation(
-      productId: json['product_id'] as String,
-      productName: json['product_name'] as String,
-      brand: json['brand'] as String,
-      reason: json['reason'] as String,
-      usage: json['usage'] as String,
-      imageUrl: json['image_url'] as String?,
+      productId: (json['product_id'] ?? json['productId'] ?? '').toString(),
+      productName: (json['product_name'] ?? json['productName'] ?? 'منتج').toString(),
+      brand: (json['brand'] ?? '').toString(),
+      reason: (json['reason'] ?? '').toString(),
+      usage: (json['usage'] ?? '').toString(),
+      imageUrl: json['image_url']?.toString() ?? json['imageUrl']?.toString(),
     );
   }
 
@@ -36,6 +36,8 @@ class AIRecommendation {
       'image_url': imageUrl,
     };
   }
+  
+  bool get isValid => productId.isNotEmpty && productName.isNotEmpty;
 }
 
 class ChatMessage {
@@ -64,12 +66,26 @@ class AIResponse {
   });
 
   factory AIResponse.fromJson(Map<String, dynamic> json) {
+    final List<AIRecommendation> recs = [];
+    final rawRecs = json['recommendations'] as List?;
+    if (rawRecs != null) {
+      for (final item in rawRecs) {
+        try {
+          if (item is Map<String, dynamic>) {
+            final rec = AIRecommendation.fromJson(item);
+            if (rec.isValid) {
+              recs.add(rec);
+            }
+          }
+        } catch (e) {
+          print('Error parsing recommendation: $e');
+        }
+      }
+    }
+    
     return AIResponse(
-      answer: json['answer'] as String,
-      recommendations: (json['recommendations'] as List?)
-              ?.map((e) => AIRecommendation.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      answer: (json['answer'] ?? 'عذراً، لم أتمكن من معالجة طلبك').toString(),
+      recommendations: recs,
     );
   }
 }
