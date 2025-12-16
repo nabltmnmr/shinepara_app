@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/navigation_utils.dart';
 import '../../models/skin_scan.dart';
 import '../../services/providers.dart';
 
@@ -23,7 +24,7 @@ class SkinScanHomeScreen extends ConsumerWidget {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safeGoBack(),
         ),
       ),
       body: SingleChildScrollView(
@@ -54,7 +55,7 @@ class SkinScanHomeScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -89,7 +90,7 @@ class SkinScanHomeScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              Icon(Icons.face_retouching_natural, size: 60, color: AppColors.white.withOpacity(0.8)),
+              Icon(Icons.face_retouching_natural, size: 60, color: AppColors.white.withValues(alpha: 0.8)),
             ],
           ),
           SizedBox(height: 16),
@@ -123,7 +124,7 @@ class SkinScanHomeScreen extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.2),
+        color: AppColors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -251,7 +252,7 @@ class SkinScanHomeScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: Offset(0, 2),
           ),
