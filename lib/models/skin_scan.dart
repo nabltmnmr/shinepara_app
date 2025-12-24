@@ -1,11 +1,16 @@
+import 'dart:convert';
+
 class SkinScan {
   final int id;
   final int customerId;
   final String? imageUrl;
   final String areaType;
   final Map<String, dynamic> metrics;
+  final int serverOverallScore;
   final String? summary;
   final String? routine;
+  final String? modelUsed;
+  final double? confidence;
   final DateTime createdAt;
 
   SkinScan({
@@ -14,20 +19,44 @@ class SkinScan {
     this.imageUrl,
     required this.areaType,
     required this.metrics,
+    this.serverOverallScore = 0,
     this.summary,
     this.routine,
+    this.modelUsed,
+    this.confidence,
     required this.createdAt,
   });
 
   factory SkinScan.fromJson(Map<String, dynamic> json) {
+    // Handle metrics - could be a string (JSON) or already a Map
+    Map<String, dynamic> metricsMap = {};
+    final metricsData = json['metrics'];
+    if (metricsData is Map<String, dynamic>) {
+      metricsMap = metricsData;
+    } else if (metricsData is Map) {
+      metricsMap = Map<String, dynamic>.from(metricsData);
+    } else if (metricsData is String && metricsData.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(metricsData);
+        if (decoded is Map) {
+          metricsMap = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        metricsMap = {};
+      }
+    }
+    
     return SkinScan(
       id: json['id'] as int,
       customerId: json['customer_id'] as int,
       imageUrl: json['image_url'] as String?,
       areaType: json['area_type'] as String? ?? 'face',
-      metrics: json['metrics'] as Map<String, dynamic>? ?? {},
-      summary: json['summary'] as String?,
+      metrics: metricsMap,
+      serverOverallScore: json['overall_score'] as int? ?? 0,
+      summary: json['summary_text'] as String? ?? json['summary'] as String?,
       routine: json['routine'] as String?,
+      modelUsed: json['model_used'] as String?,
+      confidence: (json['confidence'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -39,23 +68,34 @@ class SkinScan {
       'image_url': imageUrl,
       'area_type': areaType,
       'metrics': metrics,
-      'summary': summary,
+      'overall_score': serverOverallScore,
+      'summary_text': summary,
       'routine': routine,
+      'model_used': modelUsed,
+      'confidence': confidence,
       'created_at': createdAt.toIso8601String(),
     };
   }
 
   int get overallScore {
-    if (metrics.isEmpty) return 0;
-    final scores = [
-      (metrics['hydration'] as num?)?.toInt() ?? 0,
-      (metrics['oiliness'] as num?)?.toInt() ?? 0,
-      (metrics['texture'] as num?)?.toInt() ?? 0,
-      (metrics['pores'] as num?)?.toInt() ?? 0,
-      (metrics['spots'] as num?)?.toInt() ?? 0,
-      (metrics['wrinkles'] as num?)?.toInt() ?? 0,
-    ];
-    return (scores.reduce((a, b) => a + b) / scores.length).round();
+    // Use server-provided score if available
+    if (serverOverallScore > 0) return serverOverallScore;
+    
+    // Fallback calculation if server score not available
+    if (metrics.isEmpty) return 50;
+    
+    // Calculate from metrics (lower values = better skin)
+    final issueKeys = ['acne', 'redness', 'hyperpigmentation', 'pores', 'texture', 'wrinkles', 'oiliness', 'dryness', 'sensitivity'];
+    int total = 0;
+    int count = 0;
+    for (final key in issueKeys) {
+      final value = (metrics[key] as num?)?.toInt();
+      if (value != null) {
+        total += (100 - value); // Convert issue score to health score
+        count++;
+      }
+    }
+    return count > 0 ? (total / count).round() : 50;
   }
 
   int getMetricValue(String key) {
