@@ -18,51 +18,55 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: CachedNetworkImage(
-                imageUrl: category.iconUrl ?? '',
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: AppColors.divider,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: AppColors.sectionHeader,
-                  child: Icon(Icons.category, color: AppColors.primary, size: 40),
-                ),
+      child: SizedBox(
+        width: 100,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: category.iconUrl != null && category.iconUrl!.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: category.iconUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: AppColors.sectionHeader,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: AppColors.sectionHeader,
+                          child: Icon(Icons.category, color: AppColors.primary, size: 36),
+                        ),
+                      )
+                    : Container(
+                        color: AppColors.sectionHeader,
+                        child: Icon(Icons.category, color: AppColors.primary, size: 36),
+                      ),
               ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            category.nameAr,
-            style: AppTextStyles.labelMedium,
-            textAlign: TextAlign.center,
-            textDirection: TextDirection.rtl,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              category.nameAr,
+              style: AppTextStyles.labelMedium,
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

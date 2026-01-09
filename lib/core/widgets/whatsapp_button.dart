@@ -5,9 +5,9 @@ import '../theme/colors.dart';
 class WhatsAppButton extends StatelessWidget {
   final String phoneNumber;
   final String? message;
-
   const WhatsAppButton({
     super.key,
+
     this.phoneNumber = '9647744445057',
     this.message,
   });
@@ -28,9 +28,9 @@ class WhatsAppButton extends StatelessWidget {
       onPressed: _launchWhatsApp,
       backgroundColor: AppColors.whatsappGreen,
       child: Icon(
-        Icons.chat,
+        Icons.phone_in_talk,
         color: AppColors.white,
-        size: 28,
+        size: 26,
       ),
     );
   }

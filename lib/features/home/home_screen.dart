@@ -289,7 +289,7 @@ class HomeScreen extends ConsumerWidget {
                   heroTag: 'ai_assistant',
                   onPressed: () => context.push('/ai-assistant'),
                   backgroundColor: AppColors.aiAssistant,
-                  child: Icon(Icons.auto_awesome, color: AppColors.white),
+                  child: Icon(Icons.smart_toy, color: AppColors.white, size: 28),
                 ),
                 SizedBox(height: 12),
                 WhatsAppButton(),
