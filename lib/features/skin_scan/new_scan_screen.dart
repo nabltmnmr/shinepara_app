@@ -96,7 +96,7 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           title: 'التقاط صورة جديدة',
           subtitle: 'استخدم الكاميرا الأمامية مع توجيه ذكي',
           color: AppColors.primary,
-          onTap: () => _pickImage(ImageSource.camera),
+          onTap: () => context.push('/skin-scan/capture'),
         ),
         SizedBox(height: 12),
         _buildOptionCard(
