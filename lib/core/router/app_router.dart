@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -23,7 +22,7 @@ import '../../features/skin_scan/skin_scan_home.dart';
 import '../../features/skin_scan/new_scan_screen.dart';
 import '../../features/skin_scan/scan_results_screen.dart';
 import '../../features/skin_scan/compare_scans_screen.dart';
-import '../../features/skin_scan/guided_capture_screen.dart';
+import '../../features/skin_scan/smart_capture_screen.dart';
 import '../../features/skin_scan/processing_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -136,7 +135,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/skin-scan/capture',
-      builder: (context, state) => const GuidedCaptureScreen(),
+      builder: (context, state) => const SmartCaptureScreen(),
     ),
     GoRoute(
       path: '/skin-scan/processing',
