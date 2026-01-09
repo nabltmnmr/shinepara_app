@@ -29,8 +29,8 @@ class ApiClient {
   }) : cookieJar = cookieJar ?? CookieJar(),
        _dio = dio ?? Dio() {
     _dio.options.baseUrl = baseUrl;
-    _dio.options.connectTimeout = const Duration(seconds: 30);
-    _dio.options.receiveTimeout = const Duration(seconds: 30);
+    _dio.options.connectTimeout = const Duration(seconds: 120);
+    _dio.options.receiveTimeout = const Duration(seconds: 120);
     _dio.options.headers = {
       'Content-Type': 'application/json',
     };
@@ -576,10 +576,17 @@ class ApiClient {
       }
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
+      print('Skin scan DioException: ${e.type} - ${e.message}');
+      if (e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('انتهى وقت الاتصال - تأكد من اتصال الإنترنت');
+      }
+      if (e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('انتهى وقت الاستجابة - حاول مرة أخرى');
+      }
       if (e.response?.data != null && e.response!.data is Map) {
         throw Exception(e.response!.data['error'] ?? 'فشل تحليل البشرة');
       }
-      throw Exception('فشل تحليل البشرة');
+      throw Exception('فشل تحليل البشرة: ${e.message}');
     }
   }
 
