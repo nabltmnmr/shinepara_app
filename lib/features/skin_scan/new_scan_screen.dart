@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
-import '../../services/providers.dart';
 
 class NewScanScreen extends ConsumerStatefulWidget {
   const NewScanScreen({super.key});
@@ -15,24 +14,7 @@ class NewScanScreen extends ConsumerStatefulWidget {
 }
 
 class _NewScanScreenState extends ConsumerState<NewScanScreen> {
-  String _selectedArea = 'face';
-  File? _selectedImage;
-  bool _isAnalyzing = false;
   final ImagePicker _picker = ImagePicker();
-
-  final Map<String, String> _areaNames = {
-    'face': 'الوجه كامل',
-    'forehead': 'الجبين',
-    'cheeks': 'الخدين',
-    'chin': 'الذقن',
-  };
-
-  final Map<String, IconData> _areaIcons = {
-    'face': Icons.face,
-    'forehead': Icons.circle_outlined,
-    'cheeks': Icons.blur_on,
-    'chin': Icons.gesture,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +36,8 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildTipsCard(),
-            SizedBox(height: 20),
-            _buildAreaSelector(),
-            SizedBox(height: 20),
-            _buildImageSection(),
             SizedBox(height: 24),
-            _buildAnalyzeButton(),
+            _buildCaptureOptions(),
           ],
         ),
       ),
@@ -88,6 +66,7 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           _buildTip('تأكد من نظافة الوجه من المكياج'),
           _buildTip('التقط الصورة من مسافة 30 سم تقريباً'),
           _buildTip('حافظ على تعبير محايد للوجه'),
+          _buildTip('تأكد من ظهور الوجه بالكامل في الإطار'),
         ],
       ),
     );
@@ -106,187 +85,80 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
     );
   }
 
-  Widget _buildAreaSelector() {
+  Widget _buildCaptureOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('اختر المنطقة للفحص', style: AppTextStyles.titleMedium),
+        Text('اختر طريقة التقاط الصورة', style: AppTextStyles.titleMedium),
+        SizedBox(height: 16),
+        _buildOptionCard(
+          icon: Icons.camera_alt,
+          title: 'التقاط صورة جديدة',
+          subtitle: 'استخدم الكاميرا الأمامية مع توجيه ذكي',
+          color: AppColors.primary,
+          onTap: () => _pickImage(ImageSource.camera),
+        ),
         SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: _areaNames.entries.map((entry) {
-            final isSelected = _selectedArea == entry.key;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedArea = entry.key),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.divider,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _areaIcons[entry.key],
-                      size: 20,
-                      color: isSelected ? AppColors.white : AppColors.textSecondary,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      entry.value,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: isSelected ? AppColors.white : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+        _buildOptionCard(
+          icon: Icons.photo_library,
+          title: 'اختيار من المعرض',
+          subtitle: 'اختر صورة موجودة من معرض الصور',
+          color: AppColors.accent,
+          onTap: () => _pickImage(ImageSource.gallery),
         ),
       ],
     );
   }
 
-  Widget _buildImageSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('صورة البشرة', style: AppTextStyles.titleMedium),
-        SizedBox(height: 12),
-        if (_selectedImage != null)
-          _buildSelectedImage()
-        else
-          _buildImagePicker(),
-      ],
-    );
-  }
-
-  Widget _buildImagePicker() {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider, style: BorderStyle.solid),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildPickerOption(
-            icon: Icons.camera_alt,
-            label: 'الكاميرا',
-            onTap: () => _pickImage(ImageSource.camera),
-          ),
-          Container(
-            height: 80,
-            width: 1,
-            color: AppColors.divider,
-          ),
-          _buildPickerOption(
-            icon: Icons.photo_library,
-            label: 'المعرض',
-            onTap: () => _pickImage(ImageSource.gallery),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPickerOption({
+  Widget _buildOptionCard({
     required IconData icon,
-    required String label,
+    required String title,
+    required String subtitle,
+    required Color color,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.sectionHeader,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 32, color: AppColors.primary),
-          ),
-          SizedBox(height: 12),
-          Text(label, style: AppTextStyles.bodyMedium),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectedImage() {
-    return Stack(
-      children: [
-        ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          child: Image.file(
-            _selectedImage!,
-            height: 250,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
+          border: Border.all(color: AppColors.divider),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: IconButton(
-            onPressed: () => setState(() => _selectedImage = null),
-            icon: Container(
-              padding: EdgeInsets.all(4),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.close, color: AppColors.white, size: 20),
+              child: Icon(icon, size: 32, color: color),
             ),
-          ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppTextStyles.titleMedium),
+                  SizedBox(height: 4),
+                  Text(subtitle, style: AppTextStyles.bodySmall),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_left, color: AppColors.textLight),
+          ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildAnalyzeButton() {
-    return ElevatedButton(
-      onPressed: _selectedImage != null && !_isAnalyzing ? _analyzeSkin : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        disabledBackgroundColor: AppColors.textLight,
-        padding: EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      child: _isAnalyzing
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: AppColors.white,
-                    strokeWidth: 2,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text('جاري التحليل...', style: AppTextStyles.buttonText),
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.auto_awesome, color: AppColors.white),
-                SizedBox(width: 10),
-                Text('تحليل البشرة', style: AppTextStyles.buttonText),
-              ],
-            ),
     );
   }
 
@@ -296,12 +168,13 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
         source: source,
         maxWidth: 1024,
         maxHeight: 1024,
-        imageQuality: 85,
+        imageQuality: 90,
+        preferredCameraDevice: CameraDevice.front,
       );
       if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
+        if (mounted) {
+          context.push('/skin-scan/processing', extra: File(image.path));
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -310,38 +183,6 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           backgroundColor: AppColors.error,
         ),
       );
-    }
-  }
-
-  Future<void> _analyzeSkin() async {
-    if (_selectedImage == null) return;
-
-    setState(() => _isAnalyzing = true);
-
-    try {
-      final scan = await ref.read(skinScanServiceProvider).analyzeSkin(
-        imageFile: _selectedImage!,
-        areaType: _selectedArea,
-      );
-
-      if (mounted) {
-        ref.invalidate(scanHistoryProvider);
-        ref.invalidate(scanCreditsProvider);
-        context.pushReplacement('/skin-scan/results/${scan.id}');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ في تحليل البشرة'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isAnalyzing = false);
-      }
     }
   }
 }

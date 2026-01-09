@@ -18,10 +18,13 @@ import '../../features/orders/order_detail_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/legal/privacy_policy_screen.dart';
 import '../../features/legal/terms_screen.dart';
+import 'dart:io';
 import '../../features/skin_scan/skin_scan_home.dart';
 import '../../features/skin_scan/new_scan_screen.dart';
 import '../../features/skin_scan/scan_results_screen.dart';
 import '../../features/skin_scan/compare_scans_screen.dart';
+import '../../features/skin_scan/guided_capture_screen.dart';
+import '../../features/skin_scan/processing_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -130,6 +133,20 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/skin-scan/compare',
       builder: (context, state) => const CompareScansScreen(),
+    ),
+    GoRoute(
+      path: '/skin-scan/capture',
+      builder: (context, state) => const GuidedCaptureScreen(),
+    ),
+    GoRoute(
+      path: '/skin-scan/processing',
+      builder: (context, state) {
+        final imageFile = state.extra as File?;
+        if (imageFile == null) {
+          return const SkinScanHomeScreen();
+        }
+        return ProcessingScreen(imageFile: imageFile);
+      },
     ),
   ],
 );

@@ -1,5 +1,69 @@
 import 'dart:convert';
 
+class SkinMetric {
+  final int value;
+  final double confidence;
+  final bool isEstimated;
+  final String? notes;
+  final String nameAr;
+  final String nameEn;
+  final String description;
+  final String tips;
+
+  SkinMetric({
+    required this.value,
+    required this.confidence,
+    required this.isEstimated,
+    this.notes,
+    required this.nameAr,
+    required this.nameEn,
+    required this.description,
+    required this.tips,
+  });
+
+  factory SkinMetric.fromJson(Map<String, dynamic> json) {
+    return SkinMetric(
+      value: json['value'] as int? ?? 0,
+      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.8,
+      isEstimated: json['isEstimated'] as bool? ?? false,
+      notes: json['notes'] as String?,
+      nameAr: json['nameAr'] as String? ?? '',
+      nameEn: json['nameEn'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      tips: json['tips'] as String? ?? '',
+    );
+  }
+}
+
+class SkinVisualization {
+  final String imageUrl;
+  final String nameAr;
+  final String nameEn;
+  final String description;
+  final String tips;
+  final bool isEstimated;
+
+  SkinVisualization({
+    required this.imageUrl,
+    required this.nameAr,
+    required this.nameEn,
+    required this.description,
+    required this.tips,
+    required this.isEstimated,
+  });
+
+  factory SkinVisualization.fromJson(Map<String, dynamic> json) {
+    return SkinVisualization(
+      imageUrl: json['imageUrl'] as String? ?? '',
+      nameAr: json['nameAr'] as String? ?? '',
+      nameEn: json['nameEn'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      tips: json['tips'] as String? ?? '',
+      isEstimated: json['isEstimated'] as bool? ?? false,
+    );
+  }
+}
+
 class SkinScan {
   final int id;
   final int customerId;
@@ -11,6 +75,10 @@ class SkinScan {
   final String? routine;
   final String? modelUsed;
   final double? confidence;
+  final double? qualityScore;
+  final double? lightingScore;
+  final Map<String, SkinMetric> metricDetails;
+  final Map<String, SkinVisualization> visualizations;
   final DateTime createdAt;
 
   SkinScan({
@@ -24,11 +92,14 @@ class SkinScan {
     this.routine,
     this.modelUsed,
     this.confidence,
+    this.qualityScore,
+    this.lightingScore,
+    this.metricDetails = const {},
+    this.visualizations = const {},
     required this.createdAt,
   });
 
   factory SkinScan.fromJson(Map<String, dynamic> json) {
-    // Handle metrics - could be a string (JSON) or already a Map
     Map<String, dynamic> metricsMap = {};
     final metricsData = json['metrics'];
     if (metricsData is Map<String, dynamic>) {
@@ -45,7 +116,31 @@ class SkinScan {
         metricsMap = {};
       }
     }
-    
+
+    Map<String, SkinMetric> metricDetails = {};
+    if (json['metricDetails'] is Map) {
+      final detailsMap = json['metricDetails'] as Map;
+      for (final entry in detailsMap.entries) {
+        if (entry.value is Map) {
+          metricDetails[entry.key.toString()] = SkinMetric.fromJson(
+            Map<String, dynamic>.from(entry.value as Map),
+          );
+        }
+      }
+    }
+
+    Map<String, SkinVisualization> visualizations = {};
+    if (json['visualizations'] is Map) {
+      final vizMap = json['visualizations'] as Map;
+      for (final entry in vizMap.entries) {
+        if (entry.value is Map) {
+          visualizations[entry.key.toString()] = SkinVisualization.fromJson(
+            Map<String, dynamic>.from(entry.value as Map),
+          );
+        }
+      }
+    }
+
     return SkinScan(
       id: json['id'] as int,
       customerId: json['customer_id'] as int,
@@ -57,6 +152,10 @@ class SkinScan {
       routine: json['routine'] as String?,
       modelUsed: json['model_used'] as String?,
       confidence: (json['confidence'] as num?)?.toDouble(),
+      qualityScore: (json['quality_score'] as num?)?.toDouble(),
+      lightingScore: (json['lighting_score'] as num?)?.toDouble(),
+      metricDetails: metricDetails,
+      visualizations: visualizations,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -73,25 +172,22 @@ class SkinScan {
       'routine': routine,
       'model_used': modelUsed,
       'confidence': confidence,
+      'quality_score': qualityScore,
+      'lighting_score': lightingScore,
       'created_at': createdAt.toIso8601String(),
     };
   }
 
   int get overallScore {
-    // Use server-provided score if available
     if (serverOverallScore > 0) return serverOverallScore;
-    
-    // Fallback calculation if server score not available
     if (metrics.isEmpty) return 50;
     
-    // Calculate from metrics (lower values = better skin)
-    final issueKeys = ['acne', 'redness', 'hyperpigmentation', 'pores', 'texture', 'wrinkles', 'oiliness', 'dryness', 'sensitivity'];
     int total = 0;
     int count = 0;
-    for (final key in issueKeys) {
-      final value = (metrics[key] as num?)?.toInt();
+    for (final entry in metrics.entries) {
+      final value = (entry.value as num?)?.toInt();
       if (value != null) {
-        total += (100 - value); // Convert issue score to health score
+        total += (100 - value);
         count++;
       }
     }
@@ -99,8 +195,41 @@ class SkinScan {
   }
 
   int getMetricValue(String key) {
+    if (metricDetails.containsKey(key)) {
+      return metricDetails[key]!.value;
+    }
     return (metrics[key] as num?)?.toInt() ?? 0;
   }
+
+  static const List<String> metricKeys = [
+    'rgb_pores',
+    'rgb_color_spot',
+    'rgb_texture',
+    'pl_roughness',
+    'uv_acne',
+    'uv_color_spot',
+    'uv_roughness',
+    'skin_evenness',
+    'brown_area',
+    'uv_spot',
+    'skin_aging',
+    'skin_brightness',
+  ];
+
+  static const Map<String, String> metricNamesAr = {
+    'rgb_pores': 'المسام',
+    'rgb_color_spot': 'البقع اللونية',
+    'rgb_texture': 'ملمس البشرة',
+    'pl_roughness': 'خشونة البشرة',
+    'uv_acne': 'حب الشباب',
+    'uv_color_spot': 'التصبغات العميقة',
+    'uv_roughness': 'الخشونة العميقة',
+    'skin_evenness': 'تجانس اللون',
+    'brown_area': 'المناطق الداكنة',
+    'uv_spot': 'البقع الشمسية',
+    'skin_aging': 'علامات الشيخوخة',
+    'skin_brightness': 'إشراقة البشرة',
+  };
 }
 
 class ScanCredits {

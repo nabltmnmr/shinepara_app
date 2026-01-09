@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../models/skin_scan.dart';
 import '../../services/providers.dart';
+import '../../services/api_client.dart';
 
 class ScanResultsScreen extends ConsumerStatefulWidget {
   final int scanId;
@@ -19,24 +21,6 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
   double _selectedBudget = 50000;
   bool _isGeneratingRoutine = false;
   String? _generatedRoutine;
-
-  final Map<String, String> _metricLabels = {
-    'hydration': 'الترطيب',
-    'oiliness': 'الدهنية',
-    'texture': 'النسيج',
-    'pores': 'المسام',
-    'spots': 'البقع',
-    'wrinkles': 'التجاعيد',
-  };
-
-  final Map<String, IconData> _metricIcons = {
-    'hydration': Icons.water_drop,
-    'oiliness': Icons.opacity,
-    'texture': Icons.texture,
-    'pores': Icons.blur_circular,
-    'spots': Icons.circle,
-    'wrinkles': Icons.waves,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -72,11 +56,13 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
         children: [
           _buildOverallScoreCard(scan),
           SizedBox(height: 20),
-          _buildMetricsGrid(scan),
+          _buildVisualizationGrid(scan),
           SizedBox(height: 20),
           if (scan.summary != null) _buildSummaryCard(scan.summary!),
           SizedBox(height: 20),
           _buildRoutineSection(scan),
+          SizedBox(height: 16),
+          _buildDisclaimerBanner(),
         ],
       ),
     );
@@ -94,12 +80,12 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary.withOpacity(0.1), AppColors.accent.withOpacity(0.1)],
+          colors: [AppColors.primary.withValues(alpha: 0.1), AppColors.accent.withValues(alpha: 0.1)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -135,6 +121,20 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
               ),
             ],
           ),
+          if (scan.qualityScore != null) ...[
+            SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.high_quality, size: 16, color: AppColors.textLight),
+                SizedBox(width: 4),
+                Text(
+                  'جودة الصورة: ${(scan.qualityScore! * 100).toInt()}%',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textLight),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -148,90 +148,258 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
     return 'يحتاج عناية';
   }
 
-  Widget _buildMetricsGrid(SkinScan scan) {
-    final metrics = scan.metrics;
+  Widget _buildVisualizationGrid(SkinScan scan) {
+    final baseUrl = ApiClient.getBaseUrl();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('تحليل مفصل', style: AppTextStyles.titleLarge),
+        Text('تحليل مفصل (12 مؤشر)', style: AppTextStyles.titleLarge),
         SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 2,
+        GridView.builder(
           shrinkWrap: true,
           physics: NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.5,
-          children: _metricLabels.entries.map((entry) {
-            final value = metrics[entry.key] as int? ?? 0;
-            return _buildMetricCard(
-              label: entry.value,
-              value: value,
-              icon: _metricIcons[entry.key] ?? Icons.circle,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.75,
+          ),
+          itemCount: SkinScan.metricKeys.length,
+          itemBuilder: (context, index) {
+            final key = SkinScan.metricKeys[index];
+            final viz = scan.visualizations[key];
+            final metric = scan.metricDetails[key];
+            final value = metric?.value ?? scan.getMetricValue(key);
+            final nameAr = metric?.nameAr ?? SkinScan.metricNamesAr[key] ?? key;
+            final isEstimated = metric?.isEstimated ?? false;
+
+            return GestureDetector(
+              onTap: () => _showMetricDetail(context, key, scan),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.cardBackground,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                        child: viz?.imageUrl != null
+                            ? CachedNetworkImage(
+                                imageUrl: '$baseUrl${viz!.imageUrl}',
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                placeholder: (_, __) => Container(
+                                  color: AppColors.sectionHeader,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (_, __, ___) => Container(
+                                  color: AppColors.sectionHeader,
+                                  child: Icon(Icons.image_not_supported, color: AppColors.textLight),
+                                ),
+                              )
+                            : Container(
+                                color: AppColors.sectionHeader,
+                                child: Center(
+                                  child: Icon(Icons.image, color: AppColors.textLight),
+                                ),
+                              ),
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                      width: double.infinity,
+                      child: Column(
+                        children: [
+                          Text(
+                            nameAr,
+                            style: AppTextStyles.bodySmall.copyWith(fontSize: 10),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${100 - value}%',
+                                style: AppTextStyles.titleSmall.copyWith(
+                                  color: _getScoreColor(100 - value),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              if (isEstimated) ...[
+                                SizedBox(width: 2),
+                                Icon(Icons.info_outline, size: 10, color: AppColors.textLight),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
-          }).toList(),
+          },
         ),
       ],
     );
   }
 
-  Widget _buildMetricCard({
-    required String label,
-    required int value,
-    required IconData icon,
-  }) {
-    final color = value >= 70
-        ? AppColors.success
-        : value >= 50
-            ? Colors.orange
-            : AppColors.error;
+  Color _getScoreColor(int score) {
+    if (score >= 70) return AppColors.success;
+    if (score >= 50) return Colors.orange;
+    return AppColors.error;
+  }
 
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
+  void _showMetricDetail(BuildContext context, String key, SkinScan scan) {
+    final metric = scan.metricDetails[key];
+    final viz = scan.visualizations[key];
+    final value = metric?.value ?? scan.getMetricValue(key);
+    final nameAr = metric?.nameAr ?? SkinScan.metricNamesAr[key] ?? key;
+    final description = metric?.description ?? viz?.description ?? '';
+    final tips = metric?.tips ?? viz?.tips ?? '';
+    final isEstimated = metric?.isEstimated ?? false;
+    final baseUrl = ApiClient.getBaseUrl();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardBackground,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: AppColors.textSecondary),
-              SizedBox(width: 6),
-              Text(label, style: AppTextStyles.bodySmall),
-            ],
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: value / 100,
-                    backgroundColor: AppColors.divider,
-                    color: color,
-                    minHeight: 8,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                if (viz?.imageUrl != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: '$baseUrl${viz!.imageUrl}',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(nameAr, style: AppTextStyles.titleLarge),
+                          if (isEstimated) ...[
+                            SizedBox(width: 8),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.aiAssistantLight,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'تقديري',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.aiAssistant,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            'النتيجة: ',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                          Text(
+                            '${100 - value}%',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: _getScoreColor(100 - value),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              SizedBox(width: 8),
-              Text(
-                '$value%',
-                style: AppTextStyles.titleSmall.copyWith(color: color),
+              ],
+            ),
+            SizedBox(height: 20),
+            if (description.isNotEmpty) ...[
+              Text('الوصف', style: AppTextStyles.titleSmall),
+              SizedBox(height: 8),
+              Text(description, style: AppTextStyles.bodyMedium),
+              SizedBox(height: 16),
+            ],
+            if (tips.isNotEmpty) ...[
+              Text('نصائح للتحسين', style: AppTextStyles.titleSmall),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.aiAssistantLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline, color: AppColors.aiAssistant, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(child: Text(tips, style: AppTextStyles.bodySmall)),
+                  ],
+                ),
               ),
             ],
-          ),
-        ],
+            if (isEstimated) ...[
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'تقدير من صورة RGB. ليس تشخيصاً طبياً.',
+                        style: AppTextStyles.bodySmall.copyWith(color: Colors.orange[800]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -250,7 +418,7 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
             children: [
               Icon(Icons.auto_awesome, color: AppColors.aiAssistant),
               SizedBox(width: 8),
-              Text('تحليل الذكاء الاصطناعي', style: AppTextStyles.titleSmall),
+              Text('ملخص التحليل', style: AppTextStyles.titleSmall),
             ],
           ),
           SizedBox(height: 12),
@@ -258,6 +426,29 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
             summary,
             style: AppTextStyles.bodyMedium,
             textDirection: TextDirection.rtl,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDisclaimerBanner() {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.blue, size: 20),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'تقدير من صورة RGB. ليس تشخيصاً طبياً. راجع طبيب جلدية للحالات الشديدة.',
+              style: AppTextStyles.bodySmall.copyWith(color: Colors.blue[800]),
+            ),
           ),
         ],
       ),
@@ -348,7 +539,7 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withOpacity(0.3)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,16 +579,22 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
         scanId: scanId,
         budget: _selectedBudget,
       );
-      setState(() => _generatedRoutine = routine);
+      if (mounted) {
+        setState(() => _generatedRoutine = routine);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ في إنشاء الروتين'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ في إنشاء الروتين'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     } finally {
-      setState(() => _isGeneratingRoutine = false);
+      if (mounted) {
+        setState(() => _isGeneratingRoutine = false);
+      }
     }
   }
 }

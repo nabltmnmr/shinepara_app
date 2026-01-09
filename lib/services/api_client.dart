@@ -506,6 +506,10 @@ class ApiClient {
     _instance = ApiClient(baseUrl: baseUrl);
   }
 
+  static String getBaseUrl() {
+    return _instance?.baseUrl ?? 'https://shine-flutter-doc--nabltmnmr.replit.app';
+  }
+
   Future<Map<String, dynamic>> getScanCredits() async {
     try {
       final response = await _dio.get('/api/skin-scan/credits');

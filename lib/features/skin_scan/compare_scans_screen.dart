@@ -14,19 +14,8 @@ class CompareScansScreen extends ConsumerStatefulWidget {
 }
 
 class _CompareScansScreenState extends ConsumerState<CompareScansScreen> {
-  SkinScan? _selectedScan1;
-  SkinScan? _selectedScan2;
-  bool _isComparing = false;
-  ScanComparison? _comparison;
-
-  final Map<String, String> _metricLabels = {
-    'hydration': 'الترطيب',
-    'oiliness': 'الدهنية',
-    'texture': 'النسيج',
-    'pores': 'المسام',
-    'spots': 'البقع',
-    'wrinkles': 'التجاعيد',
-  };
+  SkinScan? _scan1;
+  SkinScan? _scan2;
 
   @override
   Widget build(BuildContext context) {
@@ -45,16 +34,31 @@ class _CompareScansScreenState extends ConsumerState<CompareScansScreen> {
         ),
       ),
       body: historyAsync.when(
-        data: (history) => _buildContent(history),
+        data: (scans) => _buildContent(scans),
         loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, _) => Center(child: Text('حدث خطأ في تحميل السجل')),
+        error: (_, __) => Center(child: Text('حدث خطأ في تحميل البيانات')),
       ),
     );
   }
 
-  Widget _buildContent(List<SkinScan> history) {
-    if (history.length < 2) {
-      return _buildInsufficientScans();
+  Widget _buildContent(List<SkinScan> scans) {
+    if (scans.length < 2) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.compare_arrows, size: 64, color: AppColors.textLight),
+            SizedBox(height: 16),
+            Text('تحتاج إلى فحصين على الأقل للمقارنة', style: AppTextStyles.bodyLarge),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.push('/skin-scan/new'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: Text('بدء فحص جديد', style: AppTextStyles.buttonText),
+            ),
+          ],
+        ),
+      );
     }
 
     return SingleChildScrollView(
@@ -62,319 +66,295 @@ class _CompareScansScreenState extends ConsumerState<CompareScansScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildScanSelector('الفحص الأول', _selectedScan1, history, (scan) {
-            setState(() => _selectedScan1 = scan);
-          }),
+          _buildWarningBanner(),
           SizedBox(height: 16),
-          _buildScanSelector('الفحص الثاني', _selectedScan2, history, (scan) {
-            setState(() => _selectedScan2 = scan);
-          }),
-          SizedBox(height: 20),
-          _buildCompareButton(),
-          SizedBox(height: 20),
-          if (_comparison != null) _buildComparisonResults(),
+          _buildScanSelector(scans),
+          SizedBox(height: 24),
+          if (_scan1 != null && _scan2 != null) _buildComparison(),
         ],
       ),
     );
   }
 
-  Widget _buildInsufficientScans() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.compare_arrows, size: 80, color: AppColors.textLight),
-            SizedBox(height: 20),
-            Text(
-              'يجب إجراء فحصين على الأقل للمقارنة',
-              style: AppTextStyles.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 12),
-            Text(
-              'قم بإجراء فحوصات إضافية لتتمكن من مقارنة تطور بشرتك',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => context.go('/skin-scan/new'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: Text('إجراء فحص جديد', style: AppTextStyles.buttonText),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScanSelector(
-    String label,
-    SkinScan? selected,
-    List<SkinScan> history,
-    Function(SkinScan?) onChanged,
-  ) {
-    final availableScans = history.where((scan) {
-      if (label == 'الفحص الأول') {
-        return _selectedScan2 == null || scan.id != _selectedScan2!.id;
-      } else {
-        return _selectedScan1 == null || scan.id != _selectedScan1!.id;
-      }
-    }).toList();
-
+  Widget _buildWarningBanner() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selected != null ? AppColors.primary : AppColors.divider,
-        ),
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(label, style: AppTextStyles.titleSmall),
-          SizedBox(height: 12),
-          DropdownButtonFormField<SkinScan>(
-            value: selected,
-            hint: Text('اختر فحص', style: AppTextStyles.bodyMedium),
-            decoration: InputDecoration(
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'إذا كانت الإضاءة أو زاوية الصورة مختلفة بين الفحصين، قد تكون النتائج غير دقيقة.',
+              style: AppTextStyles.bodySmall.copyWith(color: Colors.orange[800]),
             ),
-            items: availableScans.map((scan) {
-              return DropdownMenuItem(
-                value: scan,
-                child: Text(
-                  '${_formatDate(scan.createdAt)} - ${scan.overallScore}%',
-                  style: AppTextStyles.bodyMedium,
-                ),
-              );
-            }).toList(),
-            onChanged: onChanged,
           ),
-          if (selected != null) ...[
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('النتيجة:', style: AppTextStyles.bodySmall),
-                Text(
-                  '${selected.overallScore}%',
-                  style: AppTextStyles.titleSmall.copyWith(color: AppColors.primary),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildCompareButton() {
-    final canCompare = _selectedScan1 != null && _selectedScan2 != null;
-
-    return ElevatedButton(
-      onPressed: canCompare && !_isComparing ? _compareScans : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        disabledBackgroundColor: AppColors.textLight,
-        padding: EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: _isComparing
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
-                ),
-                SizedBox(width: 10),
-                Text('جاري المقارنة...', style: AppTextStyles.buttonText),
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.compare_arrows, color: AppColors.white),
-                SizedBox(width: 10),
-                Text('مقارنة الفحوصات', style: AppTextStyles.buttonText),
-              ],
-            ),
+  Widget _buildScanSelector(List<SkinScan> scans) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildScanDropdown(
+            label: 'الفحص الأول',
+            value: _scan1,
+            scans: scans.where((s) => _scan2 == null || s.id != _scan2!.id).toList(),
+            onChanged: (scan) => setState(() => _scan1 = scan),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Icon(Icons.compare_arrows, color: AppColors.textLight),
+        ),
+        Expanded(
+          child: _buildScanDropdown(
+            label: 'الفحص الثاني',
+            value: _scan2,
+            scans: scans.where((s) => _scan1 == null || s.id != _scan1!.id).toList(),
+            onChanged: (scan) => setState(() => _scan2 = scan),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildComparisonResults() {
-    if (_comparison == null) return SizedBox.shrink();
+  Widget _buildScanDropdown({
+    required String label,
+    required SkinScan? value,
+    required List<SkinScan> scans,
+    required Function(SkinScan?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.bodySmall),
+        SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<SkinScan>(
+              value: value,
+              isExpanded: true,
+              hint: Text('اختر', style: AppTextStyles.bodySmall),
+              items: scans.map((scan) {
+                return DropdownMenuItem(
+                  value: scan,
+                  child: Text(
+                    '${_formatDate(scan.createdAt)} (${scan.overallScore}%)',
+                    style: AppTextStyles.bodySmall,
+                  ),
+                );
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildComparison() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildScoreComparison(),
+        SizedBox(height: 24),
+        _buildMetricDeltas(),
+      ],
+    );
+  }
+
+  Widget _buildScoreComparison() {
+    final diff = _scan2!.overallScore - _scan1!.overallScore;
+    final isImproved = diff > 0;
 
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
             offset: Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text('مقارنة النتيجة الإجمالية', style: AppTextStyles.titleMedium),
+          SizedBox(height: 20),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Icon(Icons.analytics, color: AppColors.accent),
-              SizedBox(width: 8),
-              Text('نتائج المقارنة', style: AppTextStyles.titleMedium),
-            ],
-          ),
-          SizedBox(height: 16),
-          _buildOverallDelta(),
-          SizedBox(height: 16),
-          _buildMetricsDelta(),
-          if (_comparison!.aiInsights != null) ...[
-            SizedBox(height: 16),
-            _buildAIInsights(_comparison!.aiInsights!),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverallDelta() {
-    final delta = _comparison!.scan2.overallScore - _comparison!.scan1.overallScore;
-    final isPositive = delta > 0;
-    final color = isPositive ? AppColors.success : (delta < 0 ? AppColors.error : AppColors.textSecondary);
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('التغيير الإجمالي', style: AppTextStyles.titleSmall),
-          Row(
-            children: [
-              Icon(
-                isPositive ? Icons.arrow_upward : (delta < 0 ? Icons.arrow_downward : Icons.remove),
-                color: color,
-                size: 20,
-              ),
-              SizedBox(width: 4),
-              Text(
-                '${delta > 0 ? '+' : ''}$delta%',
-                style: AppTextStyles.titleMedium.copyWith(color: color),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricsDelta() {
-    final delta = _comparison!.delta;
-
-    return Column(
-      children: _metricLabels.entries.map((entry) {
-        final change = delta[entry.key] as int? ?? 0;
-        final isPositive = change > 0;
-        final color = isPositive ? AppColors.success : (change < 0 ? AppColors.error : AppColors.textSecondary);
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(entry.value, style: AppTextStyles.bodyMedium),
-              Row(
+              _buildScoreCircle(_scan1!.overallScore, _formatDate(_scan1!.createdAt)),
+              Column(
                 children: [
-                  if (change != 0)
-                    Icon(
-                      isPositive ? Icons.trending_up : Icons.trending_down,
-                      color: color,
-                      size: 16,
-                    ),
-                  SizedBox(width: 4),
+                  Icon(
+                    isImproved ? Icons.arrow_upward : (diff < 0 ? Icons.arrow_downward : Icons.remove),
+                    color: isImproved ? AppColors.success : (diff < 0 ? AppColors.error : AppColors.textLight),
+                    size: 32,
+                  ),
                   Text(
-                    change == 0 ? 'ثابت' : '${change > 0 ? '+' : ''}$change%',
-                    style: AppTextStyles.bodyMedium.copyWith(color: color),
+                    diff == 0 ? 'ثابت' : '${diff > 0 ? '+' : ''}$diff%',
+                    style: AppTextStyles.titleLarge.copyWith(
+                      color: isImproved ? AppColors.success : (diff < 0 ? AppColors.error : AppColors.textLight),
+                    ),
+                  ),
+                  Text(
+                    isImproved ? 'تحسن' : (diff < 0 ? 'تراجع' : ''),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: isImproved ? AppColors.success : (diff < 0 ? AppColors.error : AppColors.textLight),
+                    ),
                   ),
                 ],
               ),
+              _buildScoreCircle(_scan2!.overallScore, _formatDate(_scan2!.createdAt)),
             ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildAIInsights(String insights) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.aiAssistantLight,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome, color: AppColors.aiAssistant, size: 18),
-              SizedBox(width: 8),
-              Text('تحليل التطور', style: AppTextStyles.titleSmall),
-            ],
-          ),
-          SizedBox(height: 10),
-          Text(
-            insights,
-            style: AppTextStyles.bodyMedium,
-            textDirection: TextDirection.rtl,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildScoreCircle(int score, String label) {
+    final color = score >= 70
+        ? AppColors.success
+        : score >= 50
+            ? Colors.orange
+            : AppColors.error;
+
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: CircularProgressIndicator(
+                value: score / 100,
+                strokeWidth: 8,
+                backgroundColor: AppColors.divider,
+                color: color,
+              ),
+            ),
+            Text(
+              '$score%',
+              style: AppTextStyles.titleLarge.copyWith(color: color),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Text(label, style: AppTextStyles.bodySmall),
+      ],
+    );
+  }
+
+  Widget _buildMetricDeltas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('تفاصيل المقارنة (12 مؤشر)', style: AppTextStyles.titleLarge),
+        SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppColors.sectionHeader,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Expanded(flex: 2, child: Text('المؤشر', style: AppTextStyles.bodySmall)),
+              Expanded(child: Text('قبل', style: AppTextStyles.bodySmall, textAlign: TextAlign.center)),
+              Expanded(child: Text('التغيير', style: AppTextStyles.bodySmall, textAlign: TextAlign.center)),
+              Expanded(child: Text('بعد', style: AppTextStyles.bodySmall, textAlign: TextAlign.center)),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        ...SkinScan.metricKeys.map((key) {
+          final val1 = _scan1!.getMetricValue(key);
+          final val2 = _scan2!.getMetricValue(key);
+          final diff = val1 - val2;
+          final isImproved = diff > 0;
+          final nameAr = SkinScan.metricNamesAr[key] ?? key;
+
+          return Container(
+            margin: EdgeInsets.only(bottom: 6),
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(nameAr, style: AppTextStyles.bodyMedium),
+                ),
+                Expanded(
+                  child: Text(
+                    '${100 - val1}%',
+                    style: AppTextStyles.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (diff != 0)
+                        Icon(
+                          isImproved ? Icons.trending_up : Icons.trending_down,
+                          color: isImproved ? AppColors.success : AppColors.error,
+                          size: 14,
+                        ),
+                      SizedBox(width: 2),
+                      Text(
+                        diff == 0 ? '-' : '${diff > 0 ? '+' : ''}$diff',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: diff == 0
+                              ? AppColors.textLight
+                              : isImproved
+                                  ? AppColors.success
+                                  : AppColors.error,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    '${100 - val2}%',
+                    style: AppTextStyles.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  Future<void> _compareScans() async {
-    if (_selectedScan1 == null || _selectedScan2 == null) return;
-
-    setState(() => _isComparing = true);
-
-    try {
-      final comparison = await ref.read(skinScanServiceProvider).compareScans(
-        scanId1: _selectedScan1!.id,
-        scanId2: _selectedScan2!.id,
-      );
-      setState(() => _comparison = comparison);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ في المقارنة'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      setState(() => _isComparing = false);
-    }
+    return '${date.day}/${date.month}';
   }
 }

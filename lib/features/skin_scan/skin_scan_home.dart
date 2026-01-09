@@ -35,8 +35,10 @@ class SkinScanHomeScreen extends ConsumerWidget {
             _buildCreditsCard(creditsAsync, ref),
             SizedBox(height: 20),
             _buildNewScanButton(context, creditsAsync),
+            SizedBox(height: 16),
+            _buildFeatureHighlights(),
             SizedBox(height: 24),
-            _buildHistorySection(context, historyAsync),
+            _buildHistorySection(context, historyAsync, ref),
           ],
         ),
       ),
@@ -170,7 +172,55 @@ class SkinScanHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHistorySection(BuildContext context, AsyncValue<List<SkinScan>> historyAsync) {
+  Widget _buildFeatureHighlights() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.aiAssistantLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: AppColors.aiAssistant, size: 20),
+              SizedBox(width: 8),
+              Text('تحليل متقدم بالذكاء الاصطناعي', style: AppTextStyles.titleSmall),
+            ],
+          ),
+          SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildFeatureChip('12 مؤشر للبشرة'),
+              _buildFeatureChip('صور تحليلية'),
+              _buildFeatureChip('روتين مخصص'),
+              _buildFeatureChip('مقارنة التقدم'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureChip(String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.aiAssistant.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.bodySmall.copyWith(color: AppColors.aiAssistant),
+      ),
+    );
+  }
+
+  Widget _buildHistorySection(BuildContext context, AsyncValue<List<SkinScan>> historyAsync, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -178,16 +228,24 @@ class SkinScanHomeScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('سجل الفحوصات', style: AppTextStyles.titleLarge),
-            historyAsync.when(
-              data: (history) => history.length >= 2
-                  ? TextButton.icon(
-                      onPressed: () => context.push('/skin-scan/compare'),
-                      icon: Icon(Icons.compare_arrows, color: AppColors.accent),
-                      label: Text('مقارنة', style: TextStyle(color: AppColors.accent)),
-                    )
-                  : SizedBox.shrink(),
-              loading: () => SizedBox.shrink(),
-              error: (_, __) => SizedBox.shrink(),
+            Row(
+              children: [
+                historyAsync.when(
+                  data: (history) => history.length >= 2
+                      ? TextButton.icon(
+                          onPressed: () => context.push('/skin-scan/compare'),
+                          icon: Icon(Icons.compare_arrows, color: AppColors.accent, size: 18),
+                          label: Text('مقارنة', style: TextStyle(color: AppColors.accent)),
+                        )
+                      : SizedBox.shrink(),
+                  loading: () => SizedBox.shrink(),
+                  error: (_, __) => SizedBox.shrink(),
+                ),
+                IconButton(
+                  icon: Icon(Icons.refresh, color: AppColors.textLight),
+                  onPressed: () => ref.invalidate(scanHistoryProvider),
+                ),
+              ],
             ),
           ],
         ),
@@ -238,12 +296,11 @@ class SkinScanHomeScreen extends ConsumerWidget {
   }
 
   Widget _buildHistoryItem(BuildContext context, SkinScan scan) {
-    final areaNames = {
-      'face': 'الوجه',
-      'forehead': 'الجبين',
-      'cheeks': 'الخدين',
-      'chin': 'الذقن',
-    };
+    final scoreColor = scan.overallScore >= 70
+        ? AppColors.success
+        : scan.overallScore >= 50
+            ? Colors.orange
+            : AppColors.error;
 
     return Container(
       margin: EdgeInsets.only(bottom: 12),
@@ -264,23 +321,36 @@ class SkinScanHomeScreen extends ConsumerWidget {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: AppColors.sectionHeader,
+            color: scoreColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
             child: Text(
               '${scan.overallScore}%',
-              style: AppTextStyles.titleSmall.copyWith(color: AppColors.accent),
+              style: AppTextStyles.titleSmall.copyWith(color: scoreColor),
             ),
           ),
         ),
         title: Text(
-          areaNames[scan.areaType] ?? 'فحص البشرة',
+          'فحص البشرة',
           style: AppTextStyles.titleMedium,
         ),
-        subtitle: Text(
-          _formatDate(scan.createdAt),
-          style: AppTextStyles.bodySmall,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _formatDate(scan.createdAt),
+              style: AppTextStyles.bodySmall,
+            ),
+            if (scan.visualizations.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  '${scan.visualizations.length} صورة تحليلية',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.aiAssistant),
+                ),
+              ),
+          ],
         ),
         trailing: Icon(Icons.chevron_left, color: AppColors.textLight),
         onTap: () => context.push('/skin-scan/results/${scan.id}'),
