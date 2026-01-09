@@ -68,7 +68,9 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         ref.invalidate(scanCreditsProvider);
         context.go('/skin-scan/results/${scan.id}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Skin scan error: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _hasError = true;

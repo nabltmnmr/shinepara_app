@@ -567,10 +567,13 @@ class ApiClient {
         '/api/skin-scan/analyze',
         data: formData,
         options: Options(
-          sendTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(seconds: 60),
+          sendTimeout: const Duration(seconds: 120),
+          receiveTimeout: const Duration(seconds: 120),
         ),
       );
+      if (response.data == null) {
+        throw Exception('Empty response from server');
+      }
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {
