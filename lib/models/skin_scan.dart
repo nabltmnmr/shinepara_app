@@ -1,5 +1,35 @@
 import 'dart:convert';
 
+double? _toDouble(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v.trim());
+  return null;
+}
+
+int? _toInt(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) {
+    final s = v.trim();
+    return int.tryParse(s) ?? double.tryParse(s)?.toInt();
+  }
+  return null;
+}
+
+bool? _toBool(dynamic v) {
+  if (v == null) return null;
+  if (v is bool) return v;
+  if (v is String) {
+    final s = v.trim().toLowerCase();
+    if (s == 'true' || s == '1' || s == 'yes') return true;
+    if (s == 'false' || s == '0' || s == 'no') return false;
+  }
+  if (v is num) return v != 0;
+  return null;
+}
+
 class SkinMetric {
   final int value;
   final double confidence;
@@ -23,9 +53,9 @@ class SkinMetric {
 
   factory SkinMetric.fromJson(Map<String, dynamic> json) {
     return SkinMetric(
-      value: json['value'] as int? ?? 0,
-      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.8,
-      isEstimated: json['isEstimated'] as bool? ?? false,
+      value: _toInt(json['value']) ?? 0,
+      confidence: _toDouble(json['confidence']) ?? 0.8,
+      isEstimated: _toBool(json['isEstimated']) ?? false,
       notes: json['notes'] as String?,
       nameAr: json['nameAr'] as String? ?? '',
       nameEn: json['nameEn'] as String? ?? '',
@@ -59,7 +89,7 @@ class SkinVisualization {
       nameEn: json['nameEn'] as String? ?? '',
       description: json['description'] as String? ?? '',
       tips: json['tips'] as String? ?? '',
-      isEstimated: json['isEstimated'] as bool? ?? false,
+      isEstimated: _toBool(json['isEstimated']) ?? false,
     );
   }
 }
@@ -100,6 +130,7 @@ class SkinScan {
   });
 
   factory SkinScan.fromJson(Map<String, dynamic> json) {
+    // ---- metrics parsing (supports Map or JSON string) ----
     Map<String, dynamic> metricsMap = {};
     final metricsData = json['metrics'];
     if (metricsData is Map<String, dynamic>) {
@@ -117,72 +148,61 @@ class SkinScan {
       }
     }
 
+    // ---- metricDetails parsing ----
     Map<String, SkinMetric> metricDetails = {};
-    if (json['metricDetails'] is Map) {
-      final detailsMap = json['metricDetails'] as Map;
-      for (final entry in detailsMap.entries) {
-        if (entry.value is Map) {
-          metricDetails[entry.key.toString()] = SkinMetric.fromJson(
-            Map<String, dynamic>.from(entry.value as Map),
-          );
+    final detailsAny = json['metricDetails'];
+    if (detailsAny is Map) {
+      for (final entry in detailsAny.entries) {
+        final key = entry.key.toString();
+        final val = entry.value;
+        if (val is Map) {
+          metricDetails[key] = SkinMetric.fromJson(Map<String, dynamic>.from(val));
         }
       }
     }
 
+    // ---- visualizations parsing ----
     Map<String, SkinVisualization> visualizations = {};
-    if (json['visualizations'] is Map) {
-      final vizMap = json['visualizations'] as Map;
-      for (final entry in vizMap.entries) {
-        if (entry.value is Map) {
-          visualizations[entry.key.toString()] = SkinVisualization.fromJson(
-            Map<String, dynamic>.from(entry.value as Map),
-          );
+    final vizAny = json['visualizations'];
+    if (vizAny is Map) {
+      for (final entry in vizAny.entries) {
+        final key = entry.key.toString();
+        final val = entry.value;
+        if (val is Map) {
+          visualizations[key] =
+              SkinVisualization.fromJson(Map<String, dynamic>.from(val));
         }
       }
     }
 
-    int id;
-    if (json['id'] is int) {
-      id = json['id'] as int;
-    } else if (json['id'] is String) {
-      id = int.parse(json['id'] as String);
-    } else {
-      id = (json['id'] as num).toInt();
-    }
-    
-    int customerId;
-    if (json['customer_id'] is int) {
-      customerId = json['customer_id'] as int;
-    } else if (json['customer_id'] is String) {
-      customerId = int.parse(json['customer_id'] as String);
-    } else {
-      customerId = (json['customer_id'] as num?)?.toInt() ?? 0;
-    }
-    
+    final id = _toInt(json['id']) ?? 0;
+    final customerId = _toInt(json['customer_id']) ?? 0;
+
     DateTime createdAt;
     try {
-      if (json['created_at'] is String) {
-        createdAt = DateTime.parse(json['created_at'] as String);
+      final raw = json['created_at'];
+      if (raw is String && raw.isNotEmpty) {
+        createdAt = DateTime.parse(raw);
       } else {
         createdAt = DateTime.now();
       }
     } catch (_) {
       createdAt = DateTime.now();
     }
-    
+
     return SkinScan(
       id: id,
       customerId: customerId,
       imageUrl: json['image_url'] as String?,
       areaType: json['area_type'] as String? ?? 'face',
       metrics: metricsMap,
-      serverOverallScore: (json['overall_score'] as num?)?.toInt() ?? 0,
-      summary: json['summary_text'] as String? ?? json['summary'] as String?,
+      serverOverallScore: _toInt(json['overall_score']) ?? 0,
+      summary: (json['summary_text'] as String?) ?? (json['summary'] as String?),
       routine: json['routine'] as String?,
       modelUsed: json['model_used'] as String?,
-      confidence: (json['confidence'] as num?)?.toDouble(),
-      qualityScore: (json['quality_score'] as num?)?.toDouble(),
-      lightingScore: (json['lighting_score'] as num?)?.toDouble(),
+      confidence: _toDouble(json['confidence']),
+      qualityScore: _toDouble(json['quality_score']),
+      lightingScore: _toDouble(json['lighting_score']),
       metricDetails: metricDetails,
       visualizations: visualizations,
       createdAt: createdAt,
@@ -210,11 +230,11 @@ class SkinScan {
   int get overallScore {
     if (serverOverallScore > 0) return serverOverallScore;
     if (metrics.isEmpty) return 50;
-    
+
     int total = 0;
     int count = 0;
     for (final entry in metrics.entries) {
-      final value = (entry.value as num?)?.toInt();
+      final value = _toInt(entry.value);
       if (value != null) {
         total += (100 - value);
         count++;
@@ -227,7 +247,7 @@ class SkinScan {
     if (metricDetails.containsKey(key)) {
       return metricDetails[key]!.value;
     }
-    return (metrics[key] as num?)?.toInt() ?? 0;
+    return _toInt(metrics[key]) ?? 0;
   }
 
   static const List<String> metricKeys = [
@@ -272,8 +292,8 @@ class ScanCredits {
 
   factory ScanCredits.fromJson(Map<String, dynamic> json) {
     return ScanCredits(
-      credits: json['credits'] as int? ?? 0,
-      canClaimShareReward: json['can_claim_share_reward'] as bool? ?? true,
+      credits: _toInt(json['credits']) ?? 0,
+      canClaimShareReward: _toBool(json['can_claim_share_reward']) ?? true,
     );
   }
 }
@@ -297,12 +317,15 @@ class ScanComparison {
 
   factory ScanComparison.fromJson(Map<String, dynamic> json) {
     return ScanComparison(
-      id: json['id'] as int,
-      scan1: SkinScan.fromJson(json['scan1'] as Map<String, dynamic>),
-      scan2: SkinScan.fromJson(json['scan2'] as Map<String, dynamic>),
-      delta: json['delta'] as Map<String, dynamic>? ?? {},
+      id: _toInt(json['id']) ?? 0,
+      scan1: SkinScan.fromJson(Map<String, dynamic>.from(json['scan1'] as Map)),
+      scan2: SkinScan.fromJson(Map<String, dynamic>.from(json['scan2'] as Map)),
+      delta: (json['delta'] is Map)
+          ? Map<String, dynamic>.from(json['delta'] as Map)
+          : <String, dynamic>{},
       aiInsights: json['ai_insights'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.tryParse((json['created_at'] ?? '').toString()) ??
+          DateTime.now(),
     );
   }
 }
