@@ -254,10 +254,15 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
       face = faces.first;
       final boundingBox = face.boundingBox;
       
-      final faceCenterX = boundingBox.center.dx / imageWidth;
+      double faceCenterX = boundingBox.center.dx / imageWidth;
       final faceCenterY = boundingBox.center.dy / imageHeight;
       final faceWidth = boundingBox.width / imageWidth;
       final faceHeight = boundingBox.height / imageHeight;
+      
+      final isFrontCamera = _cameraController?.description.lensDirection == CameraLensDirection.front;
+      if (isFrontCamera) {
+        faceCenterX = 1.0 - faceCenterX;
+      }
       
       final isCentered = (faceCenterX - 0.5).abs() < 0.15 && (faceCenterY - 0.5).abs() < 0.15;
       final isTooClose = faceWidth > 0.7 || faceHeight > 0.8;
@@ -292,10 +297,15 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
     } else {
       final boundingBox = face.boundingBox;
       
-      final faceCenterX = boundingBox.center.dx / imageWidth;
+      double faceCenterX = boundingBox.center.dx / imageWidth;
       final faceCenterY = boundingBox.center.dy / imageHeight;
       final faceWidth = boundingBox.width / imageWidth;
       final faceHeight = boundingBox.height / imageHeight;
+      
+      final isFrontCamera = _cameraController?.description.lensDirection == CameraLensDirection.front;
+      if (isFrontCamera) {
+        faceCenterX = 1.0 - faceCenterX;
+      }
       
       final isCentered = (faceCenterX - 0.5).abs() < 0.15 && (faceCenterY - 0.5).abs() < 0.15;
       final isTooClose = faceWidth > 0.7 || faceHeight > 0.8;
@@ -305,9 +315,9 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
       if (!isCentered) {
         newStatus = CaptureStatus.faceNotCentered;
         if (faceCenterX < 0.35) {
-          newGuidance = 'حرك الهاتف لليمين';
+          newGuidance = 'حرك وجهك لليمين';
         } else if (faceCenterX > 0.65) {
-          newGuidance = 'حرك الهاتف لليسار';
+          newGuidance = 'حرك وجهك لليسار';
         } else if (faceCenterY < 0.35) {
           newGuidance = 'ارفع الهاتف للأعلى';
         } else {

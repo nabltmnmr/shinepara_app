@@ -141,13 +141,42 @@ class SkinScan {
       }
     }
 
+    int id;
+    if (json['id'] is int) {
+      id = json['id'] as int;
+    } else if (json['id'] is String) {
+      id = int.parse(json['id'] as String);
+    } else {
+      id = (json['id'] as num).toInt();
+    }
+    
+    int customerId;
+    if (json['customer_id'] is int) {
+      customerId = json['customer_id'] as int;
+    } else if (json['customer_id'] is String) {
+      customerId = int.parse(json['customer_id'] as String);
+    } else {
+      customerId = (json['customer_id'] as num?)?.toInt() ?? 0;
+    }
+    
+    DateTime createdAt;
+    try {
+      if (json['created_at'] is String) {
+        createdAt = DateTime.parse(json['created_at'] as String);
+      } else {
+        createdAt = DateTime.now();
+      }
+    } catch (_) {
+      createdAt = DateTime.now();
+    }
+    
     return SkinScan(
-      id: json['id'] as int,
-      customerId: json['customer_id'] as int,
+      id: id,
+      customerId: customerId,
       imageUrl: json['image_url'] as String?,
       areaType: json['area_type'] as String? ?? 'face',
       metrics: metricsMap,
-      serverOverallScore: json['overall_score'] as int? ?? 0,
+      serverOverallScore: (json['overall_score'] as num?)?.toInt() ?? 0,
       summary: json['summary_text'] as String? ?? json['summary'] as String?,
       routine: json['routine'] as String?,
       modelUsed: json['model_used'] as String?,
@@ -156,7 +185,7 @@ class SkinScan {
       lightingScore: (json['lighting_score'] as num?)?.toDouble(),
       metricDetails: metricDetails,
       visualizations: visualizations,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: createdAt,
     );
   }
 
