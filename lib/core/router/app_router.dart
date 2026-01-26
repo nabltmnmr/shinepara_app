@@ -10,6 +10,7 @@ import '../../features/search/search_screen.dart';
 import '../../features/wishlist/wishlist_screen.dart';
 import '../../features/account/account_screen.dart';
 import '../../features/catalog/categories_screen.dart';
+import '../../features/catalog/brands_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
 import '../../features/orders/orders_screen.dart';
@@ -82,6 +83,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/categories',
       builder: (context, state) => const CategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/brands',
+      builder: (context, state) => const BrandsScreen(),
     ),
     GoRoute(
       path: '/login',

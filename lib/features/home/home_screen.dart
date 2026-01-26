@@ -30,17 +30,14 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Shine',
-              style: AppTextStyles.headlineMedium.copyWith(
-                fontWeight: FontWeight.w300,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
+        centerTitle: true,
+        leadingWidth: 100,
+        title: Text(
+          'Shine',
+          style: AppTextStyles.headlineMedium.copyWith(
+            fontWeight: FontWeight.w300,
+            letterSpacing: 2,
+          ),
         ),
         actions: [
           Stack(
@@ -70,46 +67,50 @@ class HomeScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
-                onPressed: () => context.push('/notifications'),
-              ),
-              unreadCount.when(
-                data: (count) => count > 0
-                    ? Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            count > 9 ? '9+' : '$count',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.white,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      )
-                    : SizedBox.shrink(),
-                loading: () => SizedBox.shrink(),
-                error: (_, __) => SizedBox.shrink(),
-              ),
-            ],
-          ),
           IconButton(
             icon: Icon(Icons.search, color: AppColors.textPrimary),
             onPressed: () => context.push('/search'),
           ),
         ],
-        leading: IconButton(
-          icon: Icon(Icons.person_outline, color: AppColors.textPrimary),
-          onPressed: () => context.push('/account'),
+        leading: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.person_outline, color: AppColors.textPrimary),
+              onPressed: () => context.push('/account'),
+            ),
+            Stack(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                  onPressed: () => context.push('/notifications'),
+                ),
+                unreadCount.when(
+                  data: (count) => count > 0
+                      ? Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              count > 9 ? '9+' : '$count',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.white,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        )
+                      : SizedBox.shrink(),
+                  loading: () => SizedBox.shrink(),
+                  error: (_, __) => SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
       body: Stack(
@@ -193,6 +194,11 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 16),
+                  SectionHeader(
+                    title: 'العلامات التجارية',
+                    onViewAll: () => context.push('/brands'),
+                  ),
+                  SizedBox(height: 8),
                   brands.when(
                     data: (brandList) => _buildBrandStories(context, brandList),
                     loading: () => SizedBox(
