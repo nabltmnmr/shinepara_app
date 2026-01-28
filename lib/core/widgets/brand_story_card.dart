@@ -47,21 +47,20 @@ class BrandStoryCard extends StatelessWidget {
                     : Border.all(color: AppColors.divider, width: 2),
               ),
               child: Container(
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.white,
-                  border: Border.all(color: AppColors.white, width: 2),
+                  color: AppColors.primary,
+                  border: Border.all(color: AppColors.primary, width: 2),
                 ),
-                child: ClipOval(
-                  child: brand.logoUrl != null && brand.logoUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: brand.logoUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => _buildNameFallback(),
-                          errorWidget: (context, url, error) => _buildNameFallback(),
-                        )
-                      : _buildNameFallback(),
-                ),
+                child: brand.logoUrl != null && brand.logoUrl!.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: brand.logoUrl!,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => _buildNameFallback(),
+                        errorWidget: (context, url, error) => _buildNameFallback(),
+                      )
+                    : _buildNameFallback(),
               ),
             ),
             const SizedBox(height: 6),

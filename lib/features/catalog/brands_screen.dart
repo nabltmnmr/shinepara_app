@@ -46,9 +46,9 @@ class BrandsScreen extends ConsumerWidget {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.cardBackground,
+                      color: AppColors.primary,
                       border: Border.all(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary,
                         width: 2,
                       ),
                       boxShadow: [
@@ -59,11 +59,12 @@ class BrandsScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    child: ClipOval(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
                       child: brand.logoUrl != null && brand.logoUrl!.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: brand.logoUrl!,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
                               placeholder: (context, url) => Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,

@@ -22,7 +22,8 @@ class Brand {
     
     if (match != null) {
       final fileId = match.group(1);
-      return 'https://drive.google.com/uc?export=view&id=$fileId';
+      // Use lh3.googleusercontent.com which works better for apps
+      return 'https://lh3.googleusercontent.com/d/$fileId';
     }
     
     return url;
