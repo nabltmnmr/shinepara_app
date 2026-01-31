@@ -4,7 +4,7 @@ import 'colors.dart';
 
 class AppTextStyles {
   static TextStyle get headlineLarge => GoogleFonts.cairo(
-        fontSize: 28,
+        fontSize: 30,
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
       );
@@ -89,7 +89,7 @@ class AppTextStyles {
       );
 
   static TextStyle get sectionTitle => GoogleFonts.cairo(
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
       );

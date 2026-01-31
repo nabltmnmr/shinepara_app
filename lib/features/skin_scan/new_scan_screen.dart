@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../services/providers.dart';
 
 class NewScanScreen extends ConsumerStatefulWidget {
   const NewScanScreen({super.key});
@@ -18,6 +19,13 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final creditsAsync = ref.watch(scanCreditsProvider);
+    final hasCredits = creditsAsync.when(
+      data: (credits) => credits.credits > 0,
+      loading: () => false,
+      error: (_, __) => false,
+    );
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -37,7 +45,31 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           children: [
             _buildTipsCard(),
             SizedBox(height: 24),
-            _buildCaptureOptions(),
+            if (!hasCredits) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.aiAssistant.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.aiAssistant.withValues(alpha: 0.30)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: AppColors.aiAssistant),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'معاينة فقط: يمكنك فتح الكاميرا، لكن لا يمكنك بدء الفحص بدون رصيد.',
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+                        textDirection: TextDirection.rtl,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+            ],
+            _buildCaptureOptions(hasCredits: hasCredits),
           ],
         ),
       ),
@@ -85,7 +117,7 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
     );
   }
 
-  Widget _buildCaptureOptions() {
+  Widget _buildCaptureOptions({required bool hasCredits}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -96,7 +128,20 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           title: 'التقاط صورة جديدة',
           subtitle: 'استخدم الكاميرا الأمامية مع توجيه ذكي',
           color: AppColors.primary,
-          onTap: () => context.push('/skin-scan/capture'),
+          onTap: () {
+            if (!hasCredits) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'معاينة فقط — لا يمكنك بدء الفحص بدون رصيد.',
+                    textDirection: TextDirection.rtl,
+                  ),
+                  backgroundColor: AppColors.aiAssistant,
+                ),
+              );
+            }
+            context.push('/skin-scan/capture');
+          },
         ),
         SizedBox(height: 12),
         _buildOptionCard(
@@ -104,7 +149,21 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           title: 'اختيار من المعرض',
           subtitle: 'اختر صورة موجودة من معرض الصور',
           color: AppColors.accent,
-          onTap: () => _pickImage(ImageSource.gallery),
+          onTap: () {
+            if (!hasCredits) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'لا يمكنك بدء الفحص بدون رصيد.',
+                    textDirection: TextDirection.rtl,
+                  ),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+              return;
+            }
+            _pickImage(ImageSource.gallery);
+          },
         ),
       ],
     );
@@ -177,6 +236,7 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('حدث خطأ في اختيار الصورة'),

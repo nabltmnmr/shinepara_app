@@ -37,11 +37,13 @@ class ApiClient {
     _dio.interceptors.add(CookieManager(this.cookieJar));
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        final isAuthRequest = options.path.contains('/api/auth/login') || options.path.contains('/api/auth/signup');
         if (_authToken == null) {
           final prefs = await SharedPreferences.getInstance();
           _authToken = prefs.getString('auth_token');
         }
-        if (_authToken != null) {
+        // Avoid sending stale auth cookies during login/signup.
+        if (!isAuthRequest && _authToken != null) {
           options.headers['Cookie'] = 'customerToken=$_authToken';
         }
         handler.next(options);
@@ -220,14 +222,17 @@ class ApiClient {
     required String location,
   }) async {
     try {
+      final normalizedEmail = email.trim().toLowerCase();
+      final normalizedPassword = password.trim();
       final deviceId = await getDeviceId();
       final response = await _dio.post('/api/auth/signup', data: {
-        'email': email,
-        'password': password,
+        'email': normalizedEmail,
+        'password': normalizedPassword,
         'fullName': fullName,
         'phone': phone,
         'location': location,
         'deviceId': deviceId,
+        'device_id': deviceId,
       });
       
       if (response.data['success'] == true) {
@@ -252,11 +257,14 @@ class ApiClient {
     required String password,
   }) async {
     try {
+      final normalizedEmail = email.trim().toLowerCase();
+      final normalizedPassword = password.trim();
       final deviceId = await getDeviceId();
       final response = await _dio.post('/api/auth/login', data: {
-        'email': email,
-        'password': password,
+        'email': normalizedEmail,
+        'password': normalizedPassword,
         'deviceId': deviceId,
+        'device_id': deviceId,
       });
       
       final prefs = await SharedPreferences.getInstance();

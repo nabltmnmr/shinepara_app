@@ -151,10 +151,22 @@ class SkinScanHomeScreen extends ConsumerWidget {
     );
 
     return ElevatedButton(
-      onPressed: hasCredits ? () => context.push('/skin-scan/new') : null,
+      onPressed: () {
+        if (!hasCredits) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'يمكنك معاينة الكاميرا، لكن لا يمكنك بدء الفحص بدون رصيد.',
+                textDirection: TextDirection.rtl,
+              ),
+              backgroundColor: AppColors.aiAssistant,
+            ),
+          );
+        }
+        context.push('/skin-scan/new');
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        disabledBackgroundColor: AppColors.textLight,
         padding: EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -164,7 +176,7 @@ class SkinScanHomeScreen extends ConsumerWidget {
           Icon(Icons.camera_alt, color: AppColors.white),
           SizedBox(width: 10),
           Text(
-            hasCredits ? 'بدء فحص جديد' : 'لا يوجد رصيد كافٍ',
+            hasCredits ? 'بدء فحص جديد' : 'معاينة الفحص',
             style: AppTextStyles.buttonText,
           ),
         ],

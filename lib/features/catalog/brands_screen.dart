@@ -1,133 +1,215 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/widgets/shine_brand_chip.dart';
+import '../../core/widgets/shine_scaffold.dart';
 import '../../services/providers.dart';
 
-class BrandsScreen extends ConsumerWidget {
+class BrandsScreen extends ConsumerStatefulWidget {
   const BrandsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BrandsScreen> createState() => _BrandsScreenState();
+}
+
+class _BrandsScreenState extends ConsumerState<BrandsScreen> {
+  final Map<String, GlobalKey> _sectionKeys = {};
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final brands = ref.watch(brandsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        centerTitle: true,
-        title: Text('العلامات التجارية', style: AppTextStyles.titleLarge),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: brands.when(
-        data: (brandList) => GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 0.85,
-          ),
-          itemCount: brandList.length,
-          itemBuilder: (context, index) {
-            final brand = brandList[index];
-            return GestureDetector(
-              onTap: () => context.push('/products?brandId=${brand.id}'),
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary,
-                      border: Border.all(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: brand.logoUrl != null && brand.logoUrl!.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: brand.logoUrl!,
-                              fit: BoxFit.contain,
-                              placeholder: (context, url) => Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              errorWidget: (context, url, error) => Center(
-                                child: Text(
-                                  brand.name.isNotEmpty ? brand.name[0].toUpperCase() : 'B',
-                                  style: AppTextStyles.headlineMedium.copyWith(
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Center(
-                              child: Text(
-                                brand.name.isNotEmpty ? brand.name[0].toUpperCase() : 'B',
-                                style: AppTextStyles.headlineMedium.copyWith(
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                    ),
+    return ShineScaffold(
+      body: SafeArea(
+        child: brands.when(
+          data: (brandList) {
+            final grouped = _groupBrands(brandList);
+            final letters = grouped.keys.toList()..sort();
+
+            return Stack(
+              children: [
+                SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.only(bottom: 120),
+                  child: Column(
+                    children: [
+                      _buildHeader(context),
+                      _buildSearch(),
+                      const SizedBox(height: 12),
+                      ...letters.map((letter) => _buildSection(letter, grouped[letter]!)),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    brand.name,
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+                ),
+                _buildIndexBar(letters),
+              ],
             );
           },
-        ),
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: 16),
-              Text(
-                'حدث خطأ في تحميل العلامات التجارية',
-                style: AppTextStyles.bodyMedium,
-                textDirection: TextDirection.rtl,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(brandsProvider),
-                child: const Text('إعادة المحاولة'),
-              ),
-            ],
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+          error: (_, __) => Center(
+            child: Text(
+              'حدث خطأ في تحميل العلامات التجارية',
+              style: AppTextStyles.bodyMedium,
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.tune, color: AppColors.textPrimary),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.search, color: AppColors.textPrimary),
+            onPressed: () {},
+          ),
+          const Spacer(),
+          Text(
+            'Brands Directory',
+            style: AppTextStyles.titleLarge.copyWith(color: AppColors.white),
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward, color: AppColors.textPrimary),
+            onPressed: () => context.pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearch() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        textAlign: TextAlign.right,
+        decoration: InputDecoration(
+          hintText: 'Find a boutique brand...',
+          prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+          filled: true,
+          fillColor: AppColors.surfaceDark,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(String letter, List<dynamic> brands) {
+    _sectionKeys.putIfAbsent(letter, () => GlobalKey());
+
+    return Padding(
+      key: _sectionKeys[letter],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        AppColors.white.withOpacity(0.12),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                letter.toUpperCase(),
+                style: AppTextStyles.headlineSmall.copyWith(color: AppColors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 16,
+            children: [
+              for (final brand in brands)
+                ShineBrandChip(
+                  brand: brand,
+                  onTap: () => context.push('/products?brandId=${brand.id}'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndexBar(List<String> letters) {
+    return Positioned(
+      right: 8,
+      top: 140,
+      bottom: 40,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (final letter in letters)
+            GestureDetector(
+              onTap: () => _scrollTo(letter),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  letter.toUpperCase(),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _scrollTo(String letter) {
+    final key = _sectionKeys[letter];
+    if (key == null) return;
+    final context = key.currentContext;
+    if (context == null) return;
+
+    Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Map<String, List<dynamic>> _groupBrands(List<dynamic> brands) {
+    final Map<String, List<dynamic>> grouped = {};
+    for (final brand in brands) {
+      final name = (brand.name ?? '').toString().trim();
+      final letter = name.isEmpty ? '#' : name[0].toUpperCase();
+      grouped.putIfAbsent(letter, () => []).add(brand);
+    }
+    return grouped;
   }
 }

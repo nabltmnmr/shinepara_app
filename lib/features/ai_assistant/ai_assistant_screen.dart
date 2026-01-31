@@ -1,11 +1,15 @@
+import 'dart:ui' as ui;
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/utils/navigation_utils.dart';
 import '../../models/ai_recommendation.dart';
+import '../../models/product.dart';
 import '../../services/providers.dart';
 
 class AIAssistantScreen extends ConsumerStatefulWidget {
@@ -21,13 +25,9 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
   bool _isLoading = false;
 
   final List<String> _quickChips = [
-    'حب الشباب',
-    'البشرة الدهنية',
-    'التصبغات',
-    'البشرة الجافة',
-    'العناية اليومية',
-    'روتين صباحي',
-    'تساقط الشعر',
+    'Help with acne', // intentionally partially visible
+    'Recommend a serum',
+    'What is my skin type',
   ];
 
   @override
@@ -66,115 +66,162 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
     final messages = ref.watch(aiChatProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('مساعد Shine الذكي', style: AppTextStyles.titleLarge),
-            SizedBox(width: 8),
-            Icon(Icons.auto_awesome, color: AppColors.aiAssistant, size: 20),
-          ],
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => context.safeGoBack(),
-        ),
-        actions: [
-          if (messages.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.refresh, color: AppColors.textPrimary),
-              onPressed: () {
-                ref.read(aiChatProvider.notifier).clearChat();
-              },
-            ),
-        ],
-      ),
-      body: Column(
+      backgroundColor: Colors.transparent,
+      // We manage keyboard insets manually to avoid overflow.
+      resizeToAvoidBottomInset: false,
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12),
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.aiAssistantLight,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+          // Match Home background exactly.
+          const Positioned.fill(child: ColoredBox(color: AppColors.background)),
+          SafeArea(
+            bottom: false,
+            child: Stack(
               children: [
-                Icon(Icons.info_outline, color: AppColors.aiAssistant, size: 18),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'هذه التوصيات مبنية على معلومات عامة عن المنتجات ولا تغني عن استشارة طبيب الجلدية',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.aiAssistant),
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.right,
+                Positioned.fill(
+                  child: Column(
+                    children: [
+                      _ChatHeader(
+                        onTapMore: () => _showMoreSheet(context, messages.isNotEmpty),
+                        onTapBack: () => context.safeGoBack(),
+                        onTapAssistantIcon: () {},
+                      ),
+                      Expanded(
+                        child: messages.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.fromLTRB(16, 10, 16, 170),
+                                itemCount: 1 + messages.length + (_isLoading ? 1 : 0),
+                                itemBuilder: (context, index) {
+                                  if (index == 0) return const _DatePill(text: 'Today, 9:41 AM');
+
+                                  final msgIndex = index - 1;
+                                  if (_isLoading && msgIndex == messages.length) {
+                                    return _buildTypingIndicator();
+                                  }
+                                  return _ChatMessageRow(message: messages[msgIndex]);
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: AnimatedPadding(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                    child: SafeArea(
+                      top: false,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildQuickChips(),
+                          _buildInputArea(),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: messages.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.all(16),
-                    itemCount: messages.length + (_isLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (_isLoading && index == messages.length) {
-                        return _buildTypingIndicator();
-                      }
-                      return _buildMessageBubble(messages[index]);
-                    },
-                  ),
-          ),
-          _buildQuickChips(),
-          _buildInputArea(),
         ],
       ),
+    );
+  }
+
+  void _showMoreSheet(BuildContext context, bool canClear) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.cardBottomPanel,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: AppColors.white.withOpacity(0.08)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 5,
+                  width: 46,
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _SheetAction(
+                  icon: Icons.refresh,
+                  label: 'Clear chat',
+                  onTap: canClear
+                      ? () {
+                          Navigator.pop(context);
+                          ref.read(aiChatProvider.notifier).clearChat();
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 10),
             Container(
-              padding: EdgeInsets.all(24),
+              height: 74,
+              width: 74,
               decoration: BoxDecoration(
-                color: AppColors.aiAssistantLight,
                 shape: BoxShape.circle,
+                color: Colors.black.withOpacity(0.18),
+                border: Border.all(color: AppColors.white.withOpacity(0.10)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.20),
+                    blurRadius: 40,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
               ),
-              child: Icon(Icons.auto_awesome, color: AppColors.aiAssistant, size: 48),
+              child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 34),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Text(
-              'مرحباً! أنا مساعدك الذكي',
-              style: AppTextStyles.titleLarge,
-              textDirection: TextDirection.rtl,
-            ),
-            SizedBox(height: 8),
-            Text(
-              'أخبرني عن نوع بشرتك ومشاكلك وسأساعدك في اختيار المنتجات المناسبة',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-              textDirection: TextDirection.rtl,
+              'Skin Assistant',
+              style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 8),
             Text(
-              'مثال: "بشرتي دهنية وعندي حب شباب، ما هو أفضل روتين؟"',
+              'Ask about your skin, routines, or ingredients.',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Example: “What is Hyaluronic Acid good for?”',
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.aiAssistant,
+                color: AppColors.primary,
                 fontStyle: FontStyle.italic,
               ),
-              textDirection: TextDirection.rtl,
               textAlign: TextAlign.center,
             ),
           ],
@@ -183,161 +230,33 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
-    final isUser = message.isUser;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-        children: [
-          Container(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isUser ? AppColors.userMessage : AppColors.aiMessage,
-              borderRadius: BorderRadius.circular(16).copyWith(
-                bottomLeft: isUser ? Radius.zero : Radius.circular(16),
-                bottomRight: isUser ? Radius.circular(16) : Radius.zero,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (!isUser)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'مساعد Shine',
-                          style: AppTextStyles.labelMedium.copyWith(color: AppColors.aiAssistant),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(Icons.auto_awesome, color: AppColors.aiAssistant, size: 14),
-                      ],
-                    ),
-                  ),
-                Text(
-                  message.content,
-                  style: AppTextStyles.bodyMedium,
-                  textDirection: TextDirection.rtl,
-                  textAlign: TextAlign.right,
-                ),
-              ],
-            ),
-          ),
-          if (message.recommendations != null && message.recommendations!.isNotEmpty) ...[
-            SizedBox(height: 12),
-            ...message.recommendations!.map((rec) => _buildRecommendationCard(rec)),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecommendationCard(AIRecommendation recommendation) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          ElevatedButton(
-            onPressed: () => context.push('/product/${recommendation.productId}'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              minimumSize: Size.zero,
-            ),
-            child: Text('عرض المنتج', style: AppTextStyles.labelSmall.copyWith(color: AppColors.white)),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  recommendation.productName,
-                  style: AppTextStyles.titleSmall,
-                  textDirection: TextDirection.rtl,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  recommendation.brand,
-                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  recommendation.reason,
-                  style: AppTextStyles.bodySmall,
-                  textDirection: TextDirection.rtl,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 12),
-          if (recommendation.imageUrl != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: recommendation.imageUrl!,
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: AppColors.divider),
-                errorWidget: (context, url, error) => Container(
-                  color: AppColors.divider,
-                  child: Icon(Icons.image, color: AppColors.textLight),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTypingIndicator() {
     return Padding(
-      padding: EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Align(
-        alignment: Alignment.centerRight,
+        alignment: Alignment.centerLeft,
         child: Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.aiMessage,
-            borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
+            color: AppColors.aiAssistant,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.white.withOpacity(0.08)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 20,
-                height: 20,
+                width: 16,
+                height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.aiAssistant,
+                  color: AppColors.primary,
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
-                'جاري التفكير...',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.aiAssistant),
-                textDirection: TextDirection.rtl,
+                'Typing…',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.iconTint),
               ),
             ],
           ),
@@ -348,67 +267,605 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
 
   Widget _buildQuickChips() {
     return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        reverse: true,
-        itemCount: _quickChips.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: EdgeInsets.only(left: 8),
-            child: ActionChip(
-              label: Text(_quickChips[index], style: AppTextStyles.labelSmall),
-              backgroundColor: AppColors.sectionHeader,
-              onPressed: () => _sendMessage(_quickChips[index]),
-            ),
-          );
-        },
+      height: 54,
+      child: Transform.translate(
+        offset: const Offset(-20, 0), // partial chip peeking offscreen (left)
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _quickChips.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final text = _quickChips[index];
+            final highlighted = text == 'What is my skin type';
+            return GestureDetector(
+              onTap: () => _sendMessage(text),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.20),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: highlighted ? AppColors.primary.withOpacity(0.70) : AppColors.white.withOpacity(0.08),
+                    width: highlighted ? 1.4 : 1,
+                  ),
+                ),
+                child: Text(
+                  text,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.textOffWhite,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildInputArea() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, -5),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _isLoading ? null : () => _sendMessage(_textController.text),
+            child: Container(
+              height: 54,
+              width: 54,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.45),
+                    blurRadius: 26,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              // Flip direction to match the reference.
+              child: Transform.rotate(
+                angle: math.pi,
+                child: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  height: 54,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: AppColors.white.withOpacity(0.06)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _textController,
+                          enabled: !_isLoading,
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textOffWhite),
+                          decoration: InputDecoration(
+                            hintText: 'Ask about your skin',
+                            hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.iconTint),
+                            border: InputBorder.none,
+                          ),
+                          // Allow Arabic input comfortably (emulator keyboard may still vary).
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.right,
+                          onSubmitted: _isLoading ? null : _sendMessage,
+                        ),
+                      ),
+                      Icon(Icons.image_outlined, color: AppColors.iconTint, size: 22),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.send, color: AppColors.primary),
-              onPressed: _isLoading ? null : () => _sendMessage(_textController.text),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.right,
-                enabled: !_isLoading,
-                decoration: InputDecoration(
-                  hintText: 'اسأل عن منتجات العناية...',
-                  hintTextDirection: TextDirection.rtl,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.background,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    );
+  }
+}
+
+class _ChatHeader extends StatelessWidget {
+  final VoidCallback onTapMore;
+  final VoidCallback onTapBack;
+  final VoidCallback onTapAssistantIcon;
+
+  const _ChatHeader({
+    required this.onTapMore,
+    required this.onTapBack,
+    required this.onTapAssistantIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: onTapMore,
+                icon: const Icon(Icons.more_vert, color: AppColors.white, size: 22),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: onTapBack,
+                icon: const Icon(Icons.arrow_forward_ios, color: AppColors.white, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Skin Assistant',
+                style: AppTextStyles.titleLarge.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w900,
                 ),
-                onSubmitted: _isLoading ? null : _sendMessage,
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: onTapAssistantIcon,
+                child: Container(
+                  height: 34,
+                  width: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF2A1A16),
+                    border: Border.all(color: AppColors.white.withOpacity(0.10)),
+                  ),
+                  child: const Icon(Icons.auto_awesome, size: 18, color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Online',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.iconTint),
+              ),
+              const SizedBox(width: 8),
+              _Dot(color: AppColors.primary),
+              const SizedBox(width: 6),
+              const _Dot(color: AppColors.success),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Dot extends StatelessWidget {
+  final Color color;
+  const _Dot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 6,
+      width: 6,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
+    );
+  }
+}
+
+class _DatePill extends StatelessWidget {
+  final String text;
+  const _DatePill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.white.withOpacity(0.06)),
+          ),
+          child: Text(
+            text,
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.iconTint),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatMessageRow extends StatelessWidget {
+  final ChatMessage message;
+  const _ChatMessageRow({required this.message});
+
+  static final _rtlRegex = RegExp(r'[\u0600-\u06FF]');
+
+  bool _isRtl(String s) => _rtlRegex.hasMatch(s);
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = message.isUser;
+    final rtl = _isRtl(message.content);
+
+    final bubbleMaxWidth = MediaQuery.of(context).size.width * 0.78;
+    final bubble = _Bubble(
+      isUser: isUser,
+      maxWidth: bubbleMaxWidth,
+      textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+      content: message.content,
+      timestamp: message.timestamp,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+            child: isUser
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 40),
+                    child: bubble,
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(right: 52),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        bubble,
+                        Positioned(
+                          right: -18,
+                          top: 18,
+                          child: _InlineAssistantAction(),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+          if (!isUser && (message.recommendations?.isNotEmpty ?? false)) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 52),
+                child: _RecommendationProductsRow(recs: message.recommendations!),
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  final bool isUser;
+  final double maxWidth;
+  final TextDirection textDirection;
+  final String content;
+  final DateTime timestamp;
+
+  const _Bubble({
+    required this.isUser,
+    required this.maxWidth,
+    required this.textDirection,
+    required this.content,
+    required this.timestamp,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bubbleColor = isUser ? AppColors.aiAssistantUser : AppColors.aiAssistant;
+    final radius = BorderRadius.circular(26);
+    final time = TimeOfDay.fromDateTime(timestamp).format(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: radius,
+            border: Border.all(color: AppColors.white.withOpacity(0.06)),
+          ),
+          child: _HighlightedText(content: content, textDirection: textDirection, isUser: isUser),
+        ),
+        if (isUser) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: Text(
+              'Read $time',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.iconTint),
+              textDirection: TextDirection.ltr,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _HighlightedText extends StatelessWidget {
+  final String content;
+  final TextDirection textDirection;
+  final bool isUser;
+
+  const _HighlightedText({
+    required this.content,
+    required this.textDirection,
+    required this.isUser,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Highlight only "Hyaluronic Acid" (case-insensitive) in assistant messages.
+    if (!isUser) {
+      final match = RegExp(r'Hyaluronic Acid', caseSensitive: false).firstMatch(content);
+      if (match != null) {
+        final before = content.substring(0, match.start);
+        final mid = content.substring(match.start, match.end);
+        final after = content.substring(match.end);
+        return RichText(
+          textDirection: textDirection,
+          text: TextSpan(
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.white, height: 1.35),
+            children: [
+              TextSpan(text: before),
+              TextSpan(
+                text: mid,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              TextSpan(text: after),
+            ],
+          ),
+        );
+      }
+    }
+
+    return Text(
+      content,
+      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.white, height: 1.35),
+      textDirection: textDirection,
+      textAlign: textDirection == TextDirection.rtl ? TextAlign.right : TextAlign.left,
+    );
+  }
+}
+
+class _InlineAssistantAction extends StatelessWidget {
+  const _InlineAssistantAction();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 34,
+      width: 34,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFB56BFF),
+            Color(0xFFFF5AA5),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF5AA5).withOpacity(0.30),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 18),
+    );
+  }
+}
+
+class _RecommendationProductsRow extends ConsumerWidget {
+  final List<AIRecommendation> recs;
+  const _RecommendationProductsRow({required this.recs});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = recs.take(2).toList();
+    final productsAsync = ref.watch(productsProvider(ProductFilter()));
+
+    return productsAsync.when(
+      loading: () => Row(
+        children: const [
+          Expanded(child: _RecPlaceholder()),
+          SizedBox(width: 12),
+          Expanded(child: _RecPlaceholder()),
+        ],
+      ),
+      error: (_, __) => Row(
+        children: [
+          for (int i = 0; i < items.length; i++) ...[
+            Expanded(child: _RecFallbackImage(rec: items[i])),
+            if (i == 0) const SizedBox(width: 12),
+          ],
+        ],
+      ),
+      data: (products) {
+        return Row(
+          children: [
+            for (int i = 0; i < items.length; i++) ...[
+              Expanded(
+                child: _RecProductCard(
+                  rec: items[i],
+                  product: _resolveProduct(products, items[i]),
+                ),
+              ),
+              if (i == 0) const SizedBox(width: 12),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Product? _resolveProduct(List<Product> products, AIRecommendation rec) {
+    final id = int.tryParse(rec.productId);
+    if (id == null) return null;
+    for (final p in products) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+}
+
+class _RecProductCard extends StatelessWidget {
+  final AIRecommendation rec;
+  final Product? product;
+  const _RecProductCard({required this.rec, required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = product;
+    final imageUrl = p?.imageUrl?.trim() ?? rec.imageUrl?.trim() ?? '';
+    final productId = p?.id ?? int.tryParse(rec.productId);
+
+    return GestureDetector(
+      onTap: productId == null ? null : () => context.push('/product/$productId'),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          height: 118,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.16),
+            border: Border.all(color: AppColors.white.withOpacity(0.06)),
+          ),
+          child: imageUrl.isEmpty
+              ? const Center(child: Icon(Icons.image, color: AppColors.iconTint))
+              : CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(color: Colors.black.withOpacity(0.16)),
+                  errorWidget: (_, __, ___) => const Center(child: Icon(Icons.image, color: AppColors.iconTint)),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecFallbackImage extends StatelessWidget {
+  final AIRecommendation rec;
+  const _RecFallbackImage({required this.rec});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = (rec.imageUrl ?? '').trim();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        height: 118,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.16),
+          border: Border.all(color: AppColors.white.withOpacity(0.06)),
+        ),
+        child: url.isEmpty
+            ? const Center(child: Icon(Icons.image, color: AppColors.iconTint))
+            : CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(color: Colors.black.withOpacity(0.16)),
+                errorWidget: (_, __, ___) => const Center(child: Icon(Icons.image, color: AppColors.iconTint)),
+              ),
+      ),
+    );
+  }
+}
+
+class _RecPlaceholder extends StatelessWidget {
+  const _RecPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        height: 118,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.14),
+          border: Border.all(color: AppColors.white.withOpacity(0.06)),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Opacity(
+        opacity: onTap == null ? 0.45 : 1,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.white.withOpacity(0.06)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.accentGold),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

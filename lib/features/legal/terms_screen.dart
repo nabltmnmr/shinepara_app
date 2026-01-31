@@ -2,22 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/widgets/shine_scaffold.dart';
 
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return ShineScaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Text('شروط الاستخدام', style: AppTextStyles.titleLarge),
+        title: Text(
+          'شروط الاستخدام',
+          style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary),
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../services/providers.dart';
 
 enum CaptureStatus {
   noFace,
@@ -39,9 +41,10 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
   bool _isInitialized = false;
   bool _isProcessing = false;
   bool _isCapturing = false;
+
+  bool _flashOn = false;
   
   CaptureStatus _status = CaptureStatus.noFace;
-  String _guidanceText = 'جاري تشغيل الكاميرا...';
   
   Face? _detectedFace;
   double _brightnessLevel = 0.5;
@@ -51,13 +54,12 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
   Timer? _countdownTimer;
   
   late AnimationController _ringAnimationController;
-  late Animation<double> _ringAnimation;
   
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   
   StreamSubscription? _accelerometerSubscription;
-  List<double> _accelerometerHistory = [];
+  final List<double> _accelerometerHistory = [];
   static const int _stabilityHistorySize = 10;
   static const double _stabilityThreshold = 0.5;
 
@@ -74,9 +76,6 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
     _ringAnimationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
-    );
-    _ringAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ringAnimationController, curve: Curves.easeInOut),
     );
     
     _pulseController = AnimationController(
@@ -128,7 +127,6 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
       if (mounted) {
         setState(() {
           _isInitialized = true;
-          _guidanceText = 'ضع وجهك داخل الإطار';
         });
       }
     } catch (e) {
@@ -289,11 +287,9 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
 
   void _updateStatusFromConditions(List<Face> faces, double imageWidth, double imageHeight, Face? face) {
     CaptureStatus newStatus;
-    String newGuidance;
 
     if (faces.isEmpty || face == null) {
       newStatus = CaptureStatus.noFace;
-      newGuidance = 'لم يتم اكتشاف وجه';
     } else {
       final boundingBox = face.boundingBox;
       
@@ -314,44 +310,31 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
       
       if (!isCentered) {
         newStatus = CaptureStatus.faceNotCentered;
-        if (faceCenterX < 0.35) {
-          newGuidance = 'حرك وجهك لليمين';
-        } else if (faceCenterX > 0.65) {
-          newGuidance = 'حرك وجهك لليسار';
-        } else if (faceCenterY < 0.35) {
-          newGuidance = 'ارفع الهاتف للأعلى';
-        } else {
-          newGuidance = 'أنزل الهاتف للأسفل';
-        }
       } else if (isTooClose) {
         newStatus = CaptureStatus.tooClose;
-        newGuidance = 'ابتعد قليلاً عن الكاميرا';
       } else if (isTooFar) {
         newStatus = CaptureStatus.tooFar;
-        newGuidance = 'اقترب قليلاً من الكاميرا';
       } else if (!hasGoodLighting) {
         newStatus = CaptureStatus.badLighting;
-        if (_brightnessLevel < 0.2) {
-          newGuidance = 'الإضاءة ضعيفة، انتقل لمكان أفضل';
-        } else {
-          newGuidance = 'الإضاءة قوية جداً';
-        }
       } else if (!_isStable) {
         newStatus = CaptureStatus.unstable;
-        newGuidance = 'ثبّت الهاتف';
       } else {
         newStatus = CaptureStatus.ready;
-        newGuidance = 'ممتاز! ابقِ ثابتاً';
       }
     }
 
     setState(() {
       _status = newStatus;
-      _guidanceText = newGuidance;
       _detectedFace = face;
     });
 
-    if (newStatus == CaptureStatus.ready && _countdownTimer == null && !_isCapturing) {
+    final canStartTest = ref.read(scanCreditsProvider).when(
+          data: (credits) => credits.credits > 0,
+          loading: () => false,
+          error: (_, __) => false,
+        );
+
+    if (canStartTest && newStatus == CaptureStatus.ready && _countdownTimer == null && !_isCapturing) {
       _startCountdown();
     }
   }
@@ -397,12 +380,18 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
   }
 
   Future<void> _captureImage() async {
+    final canStartTest = ref.read(scanCreditsProvider).when(
+          data: (credits) => credits.credits > 0,
+          loading: () => false,
+          error: (_, __) => false,
+        );
+    if (!canStartTest) return;
+
     if (_cameraController == null || !_cameraController!.value.isInitialized || _isCapturing) return;
 
     setState(() {
       _isCapturing = true;
       _status = CaptureStatus.capturing;
-      _guidanceText = 'جاري التقاط الصورة...';
     });
 
     try {
@@ -426,6 +415,16 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
   }
 
   void _manualCapture() {
+    final canStartTest = ref.read(scanCreditsProvider).when(
+          data: (credits) => credits.credits > 0,
+          loading: () => false,
+          error: (_, __) => false,
+        );
+    if (!canStartTest) {
+      _showError('لا يوجد رصيد كافٍ لبدء الفحص');
+      return;
+    }
+
     if (_status == CaptureStatus.ready || 
         _status == CaptureStatus.countdown ||
         _detectedFace != null) {
@@ -434,30 +433,24 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
     }
   }
 
+  Future<void> _toggleFlash() async {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    setState(() => _flashOn = !_flashOn);
+    try {
+      await controller.setFlashMode(_flashOn ? FlashMode.torch : FlashMode.off);
+    } catch (_) {
+      // Some devices/front cameras don't support torch; revert UI state silently.
+      if (mounted) setState(() => _flashOn = false);
+    }
+  }
+
   void _showError(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: AppColors.error),
       );
-    }
-  }
-
-  Color _getStatusColor() {
-    switch (_status) {
-      case CaptureStatus.ready:
-      case CaptureStatus.countdown:
-        return AppColors.success;
-      case CaptureStatus.noFace:
-        return Colors.red;
-      case CaptureStatus.badLighting:
-        return Colors.orange;
-      case CaptureStatus.faceNotCentered:
-      case CaptureStatus.tooClose:
-      case CaptureStatus.tooFar:
-      case CaptureStatus.unstable:
-        return Colors.amber;
-      case CaptureStatus.capturing:
-        return AppColors.primary;
     }
   }
 
@@ -474,44 +467,49 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'فحص البشرة الذكي',
-          style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
-        ),
-        centerTitle: true,
+    final creditsAsync = ref.watch(scanCreditsProvider);
+    final canStartTest = creditsAsync.when(
+      data: (credits) => credits.credits > 0,
+      loading: () => false,
+      error: (_, __) => false,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light, // Android
+        statusBarBrightness: Brightness.dark, // iOS
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
       ),
-      body: _isInitialized
-          ? Stack(
-              fit: StackFit.expand,
-              children: [
-                _buildCameraPreview(),
-                _buildFaceGuideOverlay(),
-                _buildGuidancePanel(),
-                _buildBottomControls(),
-              ],
-            )
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        extendBodyBehindAppBar: true,
+        body: _isInitialized
+            ? Stack(
+                fit: StackFit.expand,
                 children: [
-                  const CircularProgressIndicator(color: AppColors.primary),
-                  const SizedBox(height: 16),
-                  Text(
-                    'جاري تشغيل الكاميرا...',
-                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
-                  ),
+                  _buildCameraPreview(),
+                  const _WarmVignetteOverlay(),
+                  _buildHeader(),
+                  _buildFaceFrameOverlay(),
+                  _buildBottomGlassArea(canStartTest: canStartTest),
                 ],
+              )
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: AppColors.primary),
+                    const SizedBox(height: 16),
+                    Text(
+                      'جاري تشغيل الكاميرا...',
+                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
@@ -529,10 +527,56 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
     );
   }
 
-  Widget _buildFaceGuideOverlay() {
-    final statusColor = _getStatusColor();
+  Widget _buildHeader() {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+        child: Row(
+          children: [
+            _CircleIconButton(
+              icon: Icons.close,
+              onPressed: () => context.pop(),
+            ),
+            const Spacer(),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'SHINE AI',
+                  textDirection: TextDirection.ltr,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textOffWhite.withValues(alpha: 0.62),
+                    letterSpacing: 3.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Skin Analysis',
+                  textDirection: TextDirection.ltr,
+                  style: AppTextStyles.titleLarge.copyWith(
+                    color: AppColors.textOffWhite,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            _CircleIconButton(
+              icon: _flashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+              onPressed: _toggleFlash,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFaceFrameOverlay() {
     final isReady = _status == CaptureStatus.ready || _status == CaptureStatus.countdown;
-    
+    final showCountdown = _status == CaptureStatus.countdown;
+
     return Center(
       child: AnimatedBuilder(
         animation: _pulseAnimation,
@@ -542,189 +586,475 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
             child: child,
           );
         },
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            CustomPaint(
-              size: const Size(300, 400),
-              painter: FaceGuidePainter(
-                color: statusColor,
-                progress: _status == CaptureStatus.countdown
-                    ? (3 - _countdownValue) / 3
-                    : (_status == CaptureStatus.ready ? 0.0 : 0.0),
-                isReady: isReady,
-              ),
-            ),
-            if (_status == CaptureStatus.countdown)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.9),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '$_countdownValue',
-                  style: AppTextStyles.headlineLarge.copyWith(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final w = (c.maxWidth * 0.78).clamp(280.0, 420.0);
+            final h = (c.maxHeight * 0.62).clamp(420.0, 590.0);
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size(w, h),
+                  painter: _FaceFramePainter(
+                    strokeColor: AppColors.textOffWhite.withValues(alpha: 0.35),
+                    scanColor: AppColors.primary,
                   ),
                 ),
-              ),
-          ],
+                if (showCountdown)
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.white.withValues(alpha: 0.14)),
+                    ),
+                    child: Text(
+                      '$_countdownValue',
+                      textDirection: TextDirection.ltr,
+                      style: AppTextStyles.headlineLarge.copyWith(
+                        color: AppColors.textOffWhite,
+                        fontSize: 46,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildGuidancePanel() {
+  Widget _buildBottomGlassArea({required bool canStartTest}) {
+    // If you later wire real metrics, replace these placeholders.
+    final hydration = 0.45;
+    final elasticity = 0.72;
+    final textureIsScanning = _status != CaptureStatus.capturing;
+
     return Positioned(
-      top: 20,
-      left: 20,
-      right: 20,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: _getStatusColor().withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+      left: 16,
+      right: 16,
+      bottom: 0,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _getStatusIcon(),
-              color: Colors.white,
-              size: 20,
+            const SizedBox(height: 10),
+            Text(
+              'Align face within frame',
+              textDirection: TextDirection.ltr,
+              style: AppTextStyles.headlineSmall.copyWith(
+                color: AppColors.textOffWhite,
+                fontWeight: FontWeight.w900,
+              ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                _guidanceText,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-                textDirection: TextDirection.rtl,
+            const SizedBox(height: 6),
+            Text(
+              'Hold still for optimal scanning',
+              textDirection: TextDirection.ltr,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textOffWhite.withValues(alpha: 0.60),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            _GlassPanel(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MetricColumn(
+                          icon: Icons.water_drop_outlined,
+                          label: 'Hydration',
+                          progress: hydration,
+                          valueText: '${(hydration * 100).round()}%',
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _MetricColumn(
+                          icon: Icons.autorenew_rounded,
+                          label: 'Elasticity',
+                          progress: elasticity,
+                          valueText: '${(elasticity * 100).round()}%',
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _MetricColumn(
+                          icon: Icons.grain_rounded,
+                          label: 'Texture',
+                          progress: 0.55,
+                          valueText: textureIsScanning ? 'Scanning…' : '55%',
+                          isScanning: textureIsScanning,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      _AssistantAvatar(
+                        imageAsset: 'assets/images/placeholder.png',
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatusPill(
+                          text: 'Analyzing skin barrier…',
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!canStartTest) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_rounded, size: 16, color: AppColors.textOffWhite),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Preview only — add credits to start',
+                            textDirection: TextDirection.ltr,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textOffWhite.withValues(alpha: 0.80),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  _PrimaryCtaButton(
+                    label: 'Generate Routine',
+                    onPressed: (!canStartTest || _isCapturing) ? null : _manualCapture,
+                    isLoading: _isCapturing,
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lock_rounded, size: 16, color: AppColors.textOffWhite.withValues(alpha: 0.40)),
+                const SizedBox(width: 8),
+                Text(
+                  'Images are processed locally and never stored.',
+                  textDirection: TextDirection.ltr,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textOffWhite.withValues(alpha: 0.40),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
+}
 
-  IconData _getStatusIcon() {
-    switch (_status) {
-      case CaptureStatus.ready:
-      case CaptureStatus.countdown:
-        return Icons.check_circle;
-      case CaptureStatus.noFace:
-        return Icons.face_retouching_off;
-      case CaptureStatus.badLighting:
-        return Icons.lightbulb_outline;
-      case CaptureStatus.faceNotCentered:
-        return Icons.open_with;
-      case CaptureStatus.tooClose:
-      case CaptureStatus.tooFar:
-        return Icons.straighten;
-      case CaptureStatus.unstable:
-        return Icons.vibration;
-      case CaptureStatus.capturing:
-        return Icons.camera_alt;
-    }
+class _WarmVignetteOverlay extends StatelessWidget {
+  const _WarmVignetteOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(0, -0.15),
+              radius: 1.1,
+              colors: [
+                const Color(0xFF2A1B16).withValues(alpha: 0.22),
+                const Color(0xFF120B09).withValues(alpha: 0.78),
+              ],
+              stops: const [0.0, 1.0],
+            ),
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF120B09).withValues(alpha: 0.35),
+                  const Color(0xFF120B09).withValues(alpha: 0.10),
+                  const Color(0xFF120B09).withValues(alpha: 0.55),
+                ],
+                stops: const [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _CircleIconButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 48,
+        width: 48,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.30),
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
+        ),
+        child: Icon(icon, color: AppColors.textOffWhite, size: 24),
+      ),
+    );
+  }
+}
+
+class _FaceFramePainter extends CustomPainter {
+  final Color strokeColor;
+  final Color scanColor;
+
+  _FaceFramePainter({
+    required this.strokeColor,
+    required this.scanColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: size.width,
+      height: size.height,
+    );
+
+    final stroke = Paint()
+      ..color = strokeColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6;
+
+    canvas.drawOval(rect.deflate(6), stroke);
+
+    // Orange scan line (near top of oval).
+    final y = rect.top + (rect.height * 0.19);
+    final linePaint = Paint()
+      ..color = scanColor.withValues(alpha: 0.95)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final glowPaint = Paint()
+      ..color = scanColor.withValues(alpha: 0.30)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+
+    final left = rect.left + 24;
+    final right = rect.right - 24;
+    canvas.drawLine(Offset(left, y), Offset(right, y), glowPaint);
+    canvas.drawLine(Offset(left, y), Offset(right, y), linePaint);
   }
 
-  Widget _buildBottomControls() {
-    final canCapture = _detectedFace != null;
-    
-    return Positioned(
-      bottom: 40,
-      left: 0,
-      right: 0,
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildStatusIndicator('الوجه', _detectedFace != null, Icons.face),
-              const SizedBox(width: 16),
-              _buildStatusIndicator(
-                'الإضاءة',
-                _brightnessLevel > 0.2 && _brightnessLevel < 0.85,
-                Icons.lightbulb_outline,
+  @override
+  bool shouldRepaint(covariant _FaceFramePainter oldDelegate) {
+    return strokeColor != oldDelegate.strokeColor || scanColor != oldDelegate.scanColor;
+  }
+}
+
+class _GlassPanel extends StatelessWidget {
+  final Widget child;
+  const _GlassPanel({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D1F1A).withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.32),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
               ),
-              const SizedBox(width: 16),
-              _buildStatusIndicator('الثبات', _isStable, Icons.vibration),
             ],
           ),
-          const SizedBox(height: 24),
-          if (_isCapturing)
-            const CircularProgressIndicator(color: AppColors.primary)
-          else
-            GestureDetector(
-              onTap: canCapture ? _manualCapture : null,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: canCapture ? Colors.white : Colors.grey[700],
-                  border: Border.all(
-                    color: canCapture ? _getStatusColor() : Colors.grey,
-                    width: 4,
-                  ),
-                  boxShadow: canCapture
-                      ? [
-                          BoxShadow(
-                            color: _getStatusColor().withValues(alpha: 0.5),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  Icons.camera_alt,
-                  color: canCapture ? _getStatusColor() : Colors.grey[500],
-                  size: 36,
-                ),
-              ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricColumn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final double progress;
+  final String valueText;
+  final bool isScanning;
+
+  const _MetricColumn({
+    required this.icon,
+    required this.label,
+    required this.progress,
+    required this.valueText,
+    this.isScanning = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 42,
+          width: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black.withValues(alpha: 0.16),
+            border: Border.all(color: AppColors.white.withValues(alpha: 0.10)),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 22),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          textDirection: TextDirection.ltr,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textOffWhite.withValues(alpha: 0.70),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: SizedBox(
+            height: 6,
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
-          const SizedBox(height: 16),
-          Text(
-            _status == CaptureStatus.countdown
-                ? 'جاري العد التنازلي...'
-                : (canCapture ? 'اضغط للالتقاط أو انتظر التقاط تلقائي' : 'ضع وجهك داخل الإطار'),
-            style: AppTextStyles.bodySmall.copyWith(color: Colors.white70),
-            textDirection: TextDirection.rtl,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          valueText,
+          textDirection: TextDirection.ltr,
+          style: AppTextStyles.titleMedium.copyWith(
+            color: AppColors.textOffWhite,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AssistantAvatar extends StatelessWidget {
+  final String imageAsset;
+  const _AssistantAvatar({required this.imageAsset});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      width: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.9), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
+      child: ClipOval(
+        child: Image.asset(
+          imageAsset,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: Colors.black.withValues(alpha: 0.25),
+            child: const Icon(Icons.smart_toy_outlined, color: AppColors.textOffWhite),
+          ),
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildStatusIndicator(String label, bool isGood, IconData icon) {
+class _StatusPill extends StatelessWidget {
+  final String text;
+  const _StatusPill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isGood
-            ? AppColors.success.withValues(alpha: 0.8)
-            : Colors.grey[800]!.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.black.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isGood ? Icons.check : icon,
-            color: Colors.white,
-            size: 14,
+          Container(
+            height: 8,
+            width: 8,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AppTextStyles.labelSmall.copyWith(color: Colors.white),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              textDirection: TextDirection.ltr,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textOffWhite.withValues(alpha: 0.82),
+                fontWeight: FontWeight.w700,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
         ],
       ),
@@ -732,84 +1062,75 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
   }
 }
 
-class FaceGuidePainter extends CustomPainter {
-  final Color color;
-  final double progress;
-  final bool isReady;
+class _PrimaryCtaButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
-  FaceGuidePainter({
-    required this.color,
-    required this.progress,
-    required this.isReady,
+  const _PrimaryCtaButton({
+    required this.label,
+    required this.onPressed,
+    required this.isLoading,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final rect = Rect.fromCenter(
-      center: center,
-      width: size.width - 20,
-      height: size.height - 20,
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 62,
+      width: double.infinity,
+      child: Opacity(
+        opacity: onPressed == null ? 0.55 : 1,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              gradient: const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0xFFF35A2A),
+                  Color(0xFFFF7A3D),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF35A2A).withValues(alpha: 0.35),
+                  blurRadius: 22,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+                        const SizedBox(width: 10),
+                        Text(
+                          label,
+                          textDirection: TextDirection.ltr,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ),
     );
-
-    final borderPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = isReady ? 4 : 3;
-
-    final path = Path()..addOval(rect);
-    canvas.drawPath(path, borderPaint);
-
-    if (progress > 0) {
-      final progressPaint = Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..strokeCap = StrokeCap.round;
-
-      final sweepAngle = 2 * pi * progress;
-      canvas.drawArc(
-        rect,
-        -pi / 2,
-        sweepAngle,
-        false,
-        progressPaint,
-      );
-    }
-
-    final cornerLength = 30.0;
-    final cornerPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(
-      Offset(10, size.height * 0.3),
-      Offset(10, size.height * 0.3 - cornerLength),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width - 10, size.height * 0.3),
-      Offset(size.width - 10, size.height * 0.3 - cornerLength),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(10, size.height * 0.7),
-      Offset(10, size.height * 0.7 + cornerLength),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width - 10, size.height * 0.7),
-      Offset(size.width - 10, size.height * 0.7 + cornerLength),
-      cornerPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant FaceGuidePainter oldDelegate) {
-    return color != oldDelegate.color ||
-        progress != oldDelegate.progress ||
-        isReady != oldDelegate.isReady;
   }
 }

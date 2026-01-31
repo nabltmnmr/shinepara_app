@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/widgets/shine_scaffold.dart';
+import '../../core/widgets/shine_primary_button.dart';
 import '../../services/providers.dart';
 import '../../models/notification.dart';
 
@@ -14,16 +16,18 @@ class NotificationsScreen extends ConsumerWidget {
     final notifications = ref.watch(notificationsProvider);
     final apiClient = ref.watch(apiClientProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return ShineScaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Text('الإشعارات', style: AppTextStyles.titleLarge),
+        title: Text(
+          'الإشعارات',
+          style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary),
+        ),
         centerTitle: true,
         actions: [
           TextButton(
@@ -49,18 +53,18 @@ class NotificationsScreen extends ConsumerWidget {
                   Icon(
                     Icons.notifications_off_outlined,
                     size: 80,
-                    color: AppColors.textLight,
+                    color: AppColors.textMuted,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'لا توجد إشعارات',
-                    style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.titleMedium.copyWith(color: AppColors.textPrimary),
                     textDirection: TextDirection.rtl,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'ستظهر هنا إشعارات الطلبات والتحديثات',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight),
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
                     textDirection: TextDirection.rtl,
                   ),
                 ],
@@ -95,24 +99,24 @@ class NotificationsScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 60, color: Colors.red),
+              Icon(Icons.error_outline, size: 60, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 'حدث خطأ في تحميل الإشعارات',
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
                 textDirection: TextDirection.rtl,
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
+              ShinePrimaryButton(
+                label: 'إعادة المحاولة',
                 onPressed: () => ref.invalidate(notificationsProvider),
-                child: const Text('إعادة المحاولة'),
               ),
             ],
           ),
@@ -172,13 +176,14 @@ class _NotificationCard extends StatelessWidget {
                           Text(
                             notification.timeAgo,
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.textLight,
+                              color: AppColors.textMuted,
                             ),
                           ),
                           Expanded(
                             child: Text(
                               notification.title,
                               style: AppTextStyles.titleSmall.copyWith(
+                                color: AppColors.textPrimary,
                                 fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
                               ),
                               textAlign: TextAlign.right,

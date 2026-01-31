@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/utils/navigation_utils.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/widgets/shine_product_card.dart';
 import '../../services/providers.dart';
 
 class WishlistScreen extends ConsumerWidget {
@@ -75,14 +75,14 @@ class WishlistScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.65,
+                    childAspectRatio: 0.66,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
                   itemCount: products.length,
                   itemBuilder: (context, index) {
                     final product = products[index];
-                    return ProductCard(
+                    return ShineProductCard(
                       product: product,
                       onTap: () => context.push('/product/${product.id}'),
                     );

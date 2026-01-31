@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/widgets/shine_scaffold.dart';
+import '../../core/widgets/shine_glass_panel.dart';
+import '../../core/widgets/shine_primary_button.dart';
 import '../../models/skin_scan.dart';
 import '../../services/providers.dart';
 import '../../services/api_client.dart';
@@ -26,12 +29,14 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
   Widget build(BuildContext context) {
     final scanAsync = ref.watch(skinScanProvider(widget.scanId));
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return ShineScaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('نتائج الفحص', style: AppTextStyles.headlineSmall),
+        title: Text(
+          'نتائج الفحص',
+          style: AppTextStyles.headlineSmall.copyWith(color: AppColors.textPrimary),
+        ),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
@@ -41,9 +46,19 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
       body: scanAsync.when(
         data: (scan) => scan != null
             ? _buildResults(scan)
-            : Center(child: Text('الفحص غير موجود')),
+            : Center(
+                child: Text(
+                  'الفحص غير موجود',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                ),
+              ),
         loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, _) => Center(child: Text('حدث خطأ في تحميل النتائج')),
+        error: (error, _) => Center(
+          child: Text(
+            'حدث خطأ في تحميل النتائج',
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+          ),
+        ),
       ),
     );
   }
@@ -76,20 +91,15 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
             ? Colors.orange
             : AppColors.error;
 
-    return Container(
-      padding: EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary.withValues(alpha: 0.1), AppColors.accent.withValues(alpha: 0.1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-      ),
+    return ShineGlassPanel(
+      padding: const EdgeInsets.all(24),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
-          Text('النتيجة الإجمالية', style: AppTextStyles.titleMedium),
+          Text(
+            'النتيجة الإجمالية',
+            style: AppTextStyles.titleMedium.copyWith(color: AppColors.textPrimary),
+          ),
           SizedBox(height: 16),
           Stack(
             alignment: Alignment.center,
@@ -122,15 +132,15 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
             ],
           ),
           if (scan.qualityScore != null) ...[
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.high_quality, size: 16, color: AppColors.textLight),
-                SizedBox(width: 4),
+                Icon(Icons.high_quality, size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 4),
                 Text(
                   'جودة الصورة: ${(scan.qualityScore! * 100).toInt()}%',
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textLight),
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -150,12 +160,15 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
 
   Widget _buildVisualizationGrid(SkinScan scan) {
     final baseUrl = ApiClient.getBaseUrl();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('تحليل مفصل (12 مؤشر)', style: AppTextStyles.titleLarge),
-        SizedBox(height: 12),
+        Text(
+          'تحليل مفصل (12 مؤشر)',
+          style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
           physics: NeverScrollableScrollPhysics(),
@@ -209,13 +222,13 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
                                 ),
                                 errorWidget: (_, __, ___) => Container(
                                   color: AppColors.sectionHeader,
-                                  child: Icon(Icons.image_not_supported, color: AppColors.textLight),
+                                  child: Icon(Icons.image_not_supported, color: AppColors.textMuted),
                                 ),
                               )
                             : Container(
                                 color: AppColors.sectionHeader,
                                 child: Center(
-                                  child: Icon(Icons.image, color: AppColors.textLight),
+                                  child: Icon(Icons.image, color: AppColors.textMuted),
                                 ),
                               ),
                       ),
@@ -227,12 +240,15 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
                         children: [
                           Text(
                             nameAr,
-                            style: AppTextStyles.bodySmall.copyWith(fontSize: 10),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: 10,
+                              color: AppColors.textPrimary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -244,8 +260,8 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
                                 ),
                               ),
                               if (isEstimated) ...[
-                                SizedBox(width: 2),
-                                Icon(Icons.info_outline, size: 10, color: AppColors.textLight),
+                                const SizedBox(width: 2),
+                                Icon(Icons.info_outline, size: 10, color: AppColors.textMuted),
                               ],
                             ],
                           ),
@@ -405,26 +421,26 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
   }
 
   Widget _buildSummaryCard(String summary) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.aiAssistantLight,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return ShineGlassPanel(
+      padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, color: AppColors.aiAssistant),
-              SizedBox(width: 8),
-              Text('ملخص التحليل', style: AppTextStyles.titleSmall),
+              Icon(Icons.auto_awesome, color: AppColors.accentGold),
+              const SizedBox(width: 8),
+              Text(
+                'ملخص التحليل',
+                style: AppTextStyles.titleSmall.copyWith(color: AppColors.textPrimary),
+              ),
             ],
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             summary,
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             textDirection: TextDirection.rtl,
           ),
         ],
@@ -463,8 +479,11 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('روتين العناية المقترح', style: AppTextStyles.titleLarge),
-        SizedBox(height: 12),
+        Text(
+          'روتين العناية المقترح',
+          style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 12),
         if (_generatedRoutine != null)
           _buildRoutineCard(_generatedRoutine!)
         else
@@ -474,27 +493,29 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
   }
 
   Widget _buildRoutineGenerator(SkinScan scan) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
+    return ShineGlassPanel(
+      padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('حدد ميزانيتك الشهرية للعناية بالبشرة', style: AppTextStyles.titleSmall),
-          SizedBox(height: 16),
+          Text(
+            'حدد ميزانيتك الشهرية للعناية بالبشرة',
+            style: AppTextStyles.titleSmall.copyWith(color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('25,000 د.ع', style: AppTextStyles.bodySmall),
-              Text('${_selectedBudget.toInt().toString().replaceAllMapped(
-                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                (m) => '${m[1]},'
-              )} د.ع', style: AppTextStyles.titleSmall.copyWith(color: AppColors.primary)),
-              Text('200,000 د.ع', style: AppTextStyles.bodySmall),
+              Text('25,000 د.ع', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+              Text(
+                '${_selectedBudget.toInt().toString().replaceAllMapped(
+                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                  (m) => '${m[1]},'
+                )} د.ع',
+                style: AppTextStyles.titleSmall.copyWith(color: AppColors.primary),
+              ),
+              Text('200,000 د.ع', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
             ],
           ),
           Slider(
@@ -505,28 +526,17 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
             activeColor: AppColors.primary,
             onChanged: (value) => setState(() => _selectedBudget = value),
           ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _isGeneratingRoutine ? null : () => _generateRoutine(scan.id),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              padding: EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: _isGeneratingRoutine
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
-                      ),
-                      SizedBox(width: 10),
-                      Text('جاري إنشاء الروتين...', style: AppTextStyles.buttonText),
-                    ],
+          const SizedBox(height: 16),
+          ShinePrimaryButton(
+            label: _isGeneratingRoutine ? 'جاري إنشاء الروتين...' : 'إنشاء روتين مخصص',
+            leadingIcon: _isGeneratingRoutine
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
                   )
-                : Text('إنشاء روتين مخصص', style: AppTextStyles.buttonText),
+                : null,
+            onPressed: _isGeneratingRoutine ? null : () => _generateRoutine(scan.id),
           ),
         ],
       ),
@@ -534,36 +544,35 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
   }
 
   Widget _buildRoutineCard(String routine) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
-      ),
+    return ShineGlassPanel(
+      padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.spa, color: AppColors.success),
-              SizedBox(width: 8),
-              Text('روتينك المخصص', style: AppTextStyles.titleSmall.copyWith(color: AppColors.success)),
+              const SizedBox(width: 8),
+              Text(
+                'روتينك المخصص',
+                style: AppTextStyles.titleSmall.copyWith(color: AppColors.success),
+              ),
             ],
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             routine,
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             textDirection: TextDirection.rtl,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => setState(() => _generatedRoutine = null),
-            icon: Icon(Icons.refresh, color: AppColors.accent),
-            label: Text('إنشاء روتين جديد', style: TextStyle(color: AppColors.accent)),
+            icon: Icon(Icons.refresh, color: AppColors.primary),
+            label: Text('إنشاء روتين جديد', style: TextStyle(color: AppColors.primary)),
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: AppColors.accent),
+              side: BorderSide(color: AppColors.primary),
             ),
           ),
         ],

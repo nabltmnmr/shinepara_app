@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/widgets/shine_scaffold.dart';
+import '../../core/widgets/shine_glass_panel.dart';
+import '../../core/widgets/shine_primary_button.dart';
 import '../../services/providers.dart';
 import '../../models/order.dart';
 import 'package:intl/intl.dart';
@@ -15,16 +18,15 @@ class OrdersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orders = ref.watch(ordersProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return ShineScaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Text('طلباتي', style: AppTextStyles.titleLarge),
+        title: Text('طلباتي', style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary)),
         centerTitle: true,
       ),
       body: orders.when(
@@ -34,31 +36,23 @@ class OrdersScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.shopping_bag_outlined,
-                    size: 80,
-                    color: AppColors.textLight,
-                  ),
+                  Icon(Icons.shopping_bag_outlined, size: 80, color: AppColors.textMuted),
                   const SizedBox(height: 16),
                   Text(
                     'لا توجد طلبات',
-                    style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.titleMedium.copyWith(color: AppColors.textPrimary),
                     textDirection: ui.TextDirection.rtl,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'ابدأ التسوق الآن!',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight),
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
                     textDirection: ui.TextDirection.rtl,
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
+                  ShinePrimaryButton(
+                    label: 'تصفح المنتجات',
                     onPressed: () => context.go('/'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('تصفح المنتجات'),
                   ),
                 ],
               ),
@@ -66,9 +60,8 @@ class OrdersScreen extends ConsumerWidget {
           }
 
           return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(ordersProvider);
-            },
+            onRefresh: () async => ref.invalidate(ordersProvider),
+            color: AppColors.primary,
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: orderList.length,
@@ -82,24 +75,24 @@ class OrdersScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 60, color: Colors.red),
+              Icon(Icons.error_outline, size: 60, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 'حدث خطأ في تحميل الطلبات',
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
                 textDirection: ui.TextDirection.rtl,
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
+              ShinePrimaryButton(
+                label: 'إعادة المحاولة',
                 onPressed: () => ref.invalidate(ordersProvider),
-                child: const Text('إعادة المحاولة'),
               ),
             ],
           ),
@@ -123,26 +116,16 @@ class _OrderCard extends StatelessWidget {
     final formatter = NumberFormat('#,###', 'ar');
     final dateFormatter = DateFormat('yyyy/MM/dd', 'ar');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: ShineGlassPanel(
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -152,7 +135,7 @@ class _OrderCard extends StatelessWidget {
                     _buildStatusBadge(order.status),
                     Text(
                       'طلب #${order.id}',
-                      style: AppTextStyles.titleSmall,
+                      style: AppTextStyles.titleSmall.copyWith(color: AppColors.textPrimary),
                       textDirection: ui.TextDirection.rtl,
                     ),
                   ],
@@ -163,7 +146,7 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Text(
                       dateFormatter.format(order.createdAt),
-                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textLight),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                     ),
                     Text(
                       '${formatter.format(order.total)} د.ع',
@@ -176,7 +159,7 @@ class _OrderCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.arrow_back_ios, size: 16, color: AppColors.textLight),
+                    Icon(Icons.arrow_back_ios, size: 16, color: AppColors.textMuted),
                     Text(
                       order.statusAr,
                       style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
@@ -195,38 +178,36 @@ class _OrderCard extends StatelessWidget {
   Widget _buildStatusBadge(String status) {
     Color bgColor;
     Color textColor;
-
     switch (status) {
       case 'pending':
-        bgColor = Colors.orange.shade100;
-        textColor = Colors.orange.shade800;
+        bgColor = Colors.orange.withOpacity(0.3);
+        textColor = Colors.orange.shade200;
         break;
       case 'confirmed':
-        bgColor = Colors.blue.shade100;
-        textColor = Colors.blue.shade800;
+        bgColor = Colors.blue.withOpacity(0.3);
+        textColor = Colors.blue.shade200;
         break;
       case 'preparing':
-        bgColor = Colors.purple.shade100;
-        textColor = Colors.purple.shade800;
+        bgColor = Colors.purple.withOpacity(0.3);
+        textColor = Colors.purple.shade200;
         break;
       case 'shipped':
-        bgColor = Colors.indigo.shade100;
-        textColor = Colors.indigo.shade800;
+        bgColor = Colors.indigo.withOpacity(0.3);
+        textColor = Colors.indigo.shade200;
         break;
       case 'delivered':
-        bgColor = Colors.green.shade100;
-        textColor = Colors.green.shade800;
+        bgColor = AppColors.success.withOpacity(0.3);
+        textColor = AppColors.success;
         break;
       case 'cancelled':
       case 'returned':
-        bgColor = Colors.red.shade100;
-        textColor = Colors.red.shade800;
+        bgColor = AppColors.error.withOpacity(0.3);
+        textColor = AppColors.error;
         break;
       default:
-        bgColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade800;
+        bgColor = AppColors.textMuted.withOpacity(0.2);
+        textColor = AppColors.textSecondary;
     }
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(

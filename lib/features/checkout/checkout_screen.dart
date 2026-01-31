@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/utils/navigation_utils.dart';
+import '../../core/widgets/shine_scaffold.dart';
+import '../../core/widgets/shine_glass_panel.dart';
+import '../../core/widgets/shine_primary_button.dart';
 import '../../services/providers.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -134,22 +137,26 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: AppColors.surfaceDark,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: AppColors.success.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.check_circle, color: Colors.green.shade600, size: 64),
+                  child: Icon(Icons.check_circle, color: AppColors.success, size: 64),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   'تم إرسال طلبك بنجاح!',
-                  style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                   textDirection: TextDirection.rtl,
                 ),
                 const SizedBox(height: 8),
@@ -163,17 +170,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: AppColors.success.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.payments_outlined, size: 18, color: Colors.green.shade800),
+                      Icon(Icons.payments_outlined, size: 18, color: AppColors.success),
                       const SizedBox(width: 8),
                       Text(
                         'الدفع عند الاستلام',
-                        style: AppTextStyles.labelMedium.copyWith(color: Colors.green.shade800),
+                        style: AppTextStyles.labelMedium.copyWith(color: AppColors.success),
                       ),
                     ],
                   ),
@@ -187,15 +194,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Navigator.pop(context);
                   context.go('/');
                 },
-                child: const Text('متابعة التسوق'),
+                child: Text('متابعة التسوق', style: TextStyle(color: AppColors.primary)),
               ),
               if (ref.read(authProvider) != null)
-                ElevatedButton(
+                ShinePrimaryButton(
+                  label: 'عرض طلباتي',
                   onPressed: () {
                     Navigator.pop(context);
                     context.push('/orders');
                   },
-                  child: const Text('عرض طلباتي'),
                 ),
             ],
           ),
@@ -222,14 +229,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final formatter = NumberFormat('#,###', 'ar');
 
     if (cartItems.isEmpty) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
+      return ShineScaffold(
         appBar: AppBar(
-          backgroundColor: AppColors.background,
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Text('إتمام الطلب', style: AppTextStyles.titleLarge),
+          title: Text('إتمام الطلب', style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary)),
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
             onPressed: () => context.safeGoBack(),
           ),
         ),
@@ -237,22 +244,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shopping_cart_outlined, size: 80, color: AppColors.textLight),
+              Icon(Icons.shopping_cart_outlined, size: 80, color: AppColors.textMuted),
               const SizedBox(height: 16),
-              Text('السلة فارغة', style: AppTextStyles.titleMedium),
+              Text('السلة فارغة', style: AppTextStyles.titleMedium.copyWith(color: AppColors.textPrimary)),
               const SizedBox(height: 8),
               Text(
                 'أضف منتجات للسلة لإتمام الطلب',
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                textDirection: TextDirection.rtl,
               ),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
+              ShinePrimaryButton(
+                label: 'تسوق الآن',
+                leadingIcon: const Icon(Icons.shopping_bag_outlined, color: AppColors.white, size: 22),
                 onPressed: () => context.go('/'),
-                icon: const Icon(Icons.shopping_bag_outlined),
-                label: const Text('تسوق الآن'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
               ),
             ],
           ),
@@ -260,12 +265,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return ShineScaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('إتمام الطلب', style: AppTextStyles.titleLarge),
+        title: Text('إتمام الطلب', style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary)),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
@@ -284,18 +288,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: AppColors.error.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(color: AppColors.error.withOpacity(0.5)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade700),
+                      Icon(Icons.error_outline, color: AppColors.error),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _error!,
-                          style: TextStyle(color: Colors.red.shade700),
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
                           textDirection: TextDirection.rtl,
                         ),
                       ),
@@ -314,24 +318,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade50,
+                          color: AppColors.success.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.shade200),
+                          border: Border.all(color: AppColors.success.withOpacity(0.5)),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                            Icon(Icons.check_circle, color: AppColors.success, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'تم تطبيق الكود: $_appliedCoupon',
-                                style: AppTextStyles.bodyMedium.copyWith(color: Colors.green.shade700),
+                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.success),
                                 textDirection: TextDirection.rtl,
                               ),
                             ),
                             TextButton(
                               onPressed: _removeCoupon,
-                              child: Text('إزالة', style: TextStyle(color: Colors.red.shade600)),
+                              child: Text('إزالة', style: TextStyle(color: AppColors.error)),
                             ),
                           ],
                         ),
@@ -344,11 +348,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               controller: _couponController,
                               textDirection: TextDirection.ltr,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold),
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                letterSpacing: 2,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                               decoration: InputDecoration(
                                 hintText: 'أدخل كود الخصم',
-                                hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight),
+                                hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                filled: true,
+                                fillColor: AppColors.surfaceDark,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -360,21 +370,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          ElevatedButton(
+                          ShinePrimaryButton(
+                            label: 'تطبيق',
                             onPressed: _isValidatingCoupon ? null : _validateCoupon,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                            ),
-                            child: _isValidatingCoupon
-                                ? SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColors.white,
-                                    ),
-                                  )
-                                : const Text('تطبيق'),
                           ),
                         ],
                       ),
@@ -382,7 +380,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _couponError!,
-                          style: AppTextStyles.labelSmall.copyWith(color: Colors.red.shade600),
+                          style: AppTextStyles.labelSmall.copyWith(color: AppColors.error),
                           textDirection: TextDirection.rtl,
                         ),
                       ],
@@ -443,7 +441,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 4),
                                 child: Text(
                                   'توصيل مجاني للطلبات أكثر من ${formatter.format(settings.freeShippingThreshold)} د.ع',
-                                  style: AppTextStyles.labelSmall.copyWith(color: Colors.green.shade600),
+                                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.success),
                                   textDirection: TextDirection.rtl,
                                   textAlign: TextAlign.center,
                                 ),
@@ -538,26 +536,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
               const SizedBox(height: 16),
 
-              Container(
+              ShineGlassPanel(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade50, Colors.green.shade100],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade100,
+                        color: AppColors.success.withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.payments_outlined, color: Colors.green.shade700, size: 24),
+                      child: Icon(Icons.payments_outlined, color: AppColors.success, size: 24),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -567,7 +556,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           Text(
                             'الدفع عند الاستلام',
                             style: AppTextStyles.titleSmall.copyWith(
-                              color: Colors.green.shade800,
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                             textDirection: TextDirection.rtl,
@@ -575,7 +564,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(height: 2),
                           Text(
                             'ادفع نقداً عند استلام طلبك',
-                            style: AppTextStyles.bodySmall.copyWith(color: Colors.green.shade700),
+                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
                             textDirection: TextDirection.rtl,
                           ),
                         ],
@@ -593,38 +582,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
+          color: AppColors.surfaceDark.withOpacity(0.95),
+          border: Border(top: BorderSide(color: AppColors.divider)),
         ),
         child: SafeArea(
           child: SizedBox(
             width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isProcessing ? null : _placeOrder,
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isProcessing
+            height: 56,
+            child: ShinePrimaryButton(
+              label: 'تأكيد الطلب',
+              leadingIcon: _isProcessing
                   ? SizedBox(
                       height: 22,
                       width: 22,
                       child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
                     )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.check_circle_outline),
-                        const SizedBox(width: 8),
-                        Text('تأكيد الطلب', style: AppTextStyles.buttonText),
-                      ],
-                    ),
+                  : const Icon(Icons.check_circle_outline, color: AppColors.white, size: 22),
+              onPressed: _isProcessing ? null : _placeOrder,
             ),
           ),
         ),
@@ -637,26 +611,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     required IconData icon,
     required Widget child,
   }) {
-    return Container(
+    return ShineGlassPanel(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(title, style: AppTextStyles.titleMedium, textDirection: TextDirection.rtl),
+              Text(
+                title,
+                style: AppTextStyles.titleMedium.copyWith(color: AppColors.textPrimary),
+                textDirection: TextDirection.rtl,
+              ),
               const SizedBox(width: 8),
               Icon(icon, color: AppColors.primary, size: 22),
             ],
@@ -679,11 +647,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ? '-${formatter.format(amount.abs())} د.ع'
                   : '${formatter.format(amount)} د.ع',
           style: AppTextStyles.bodyMedium.copyWith(
-            color: isFree || isDiscount ? Colors.green.shade600 : null,
+            color: isFree || isDiscount ? AppColors.success : AppColors.textPrimary,
             fontWeight: isFree || isDiscount ? FontWeight.w600 : null,
           ),
         ),
-        Text(label, style: AppTextStyles.bodyMedium, textDirection: TextDirection.rtl),
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          textDirection: TextDirection.rtl,
+        ),
       ],
     );
   }
@@ -704,12 +676,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       validator: validator,
       textDirection: textDirection ?? TextDirection.rtl,
       textAlign: textDirection == TextDirection.ltr ? TextAlign.left : TextAlign.right,
+      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
         prefixIcon: Icon(icon, color: AppColors.textSecondary),
         alignLabelWithHint: true,
         filled: true,
-        fillColor: AppColors.background,
+        fillColor: AppColors.surfaceDark,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -724,7 +698,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red.shade300),
+          borderSide: BorderSide(color: AppColors.error),
         ),
       ),
     );

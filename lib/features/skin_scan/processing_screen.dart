@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/widgets/shine_scaffold.dart';
+import '../../core/widgets/shine_primary_button.dart';
 import '../../services/providers.dart';
 
 class ProcessingScreen extends ConsumerStatefulWidget {
@@ -82,8 +84,7 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return ShineScaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -133,7 +134,7 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
       children: [
         Text(
           _statusMessage,
-          style: AppTextStyles.titleMedium,
+          style: AppTextStyles.titleMedium.copyWith(color: AppColors.textPrimary),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -147,7 +148,7 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
         const SizedBox(height: 8),
         Text(
           '${(_currentStep + 1)}/${_steps.length}',
-          style: AppTextStyles.bodySmall,
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -182,7 +183,7 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
                       : isCurrent
                           ? step['icon'] as IconData
                           : step['icon'] as IconData,
-                  color: isPending ? AppColors.textLight : Colors.white,
+                  color: isPending ? AppColors.textMuted : AppColors.textPrimary,
                   size: 18,
                 ),
               ),
@@ -192,7 +193,7 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
                   step['title'] as String,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: isPending
-                        ? AppColors.textLight
+                        ? AppColors.textMuted
                         : isCompleted
                             ? AppColors.success
                             : AppColors.textPrimary,
@@ -219,14 +220,10 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
   Widget _buildRetryButton() {
     return Column(
       children: [
-        ElevatedButton.icon(
+        ShinePrimaryButton(
+          label: 'إعادة المحاولة',
+          leadingIcon: const Icon(Icons.refresh, color: AppColors.white, size: 20),
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.refresh),
-          label: const Text('إعادة المحاولة'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-          ),
         ),
         const SizedBox(height: 12),
         TextButton(

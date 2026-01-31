@@ -1,6 +1,5 @@
 import 'package:go_router/go_router.dart';
 import '../../features/splash/splash_screen.dart';
-import '../../features/home/home_screen.dart';
 import '../../features/product/product_list_screen.dart';
 import '../../features/product/product_detail_screen.dart';
 import '../../features/cart/cart_screen.dart';
@@ -25,6 +24,7 @@ import '../../features/skin_scan/scan_results_screen.dart';
 import '../../features/skin_scan/compare_scans_screen.dart';
 import '../../features/skin_scan/smart_capture_screen.dart';
 import '../../features/skin_scan/processing_screen.dart';
+import 'main_shell.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -35,7 +35,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/',
-      builder: (context, state) => const HomeScreen(),
+      builder: (context, state) => const MainShell(),
     ),
     GoRoute(
       path: '/products',
