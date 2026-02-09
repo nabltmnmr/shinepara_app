@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "324857038552",
+    "project_id": "shine-app-final",
+    "storage_bucket": "shine-app-final.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:324857038552:android:6069a8817a65bfefe9f9ad",
+        "android_client_info": {
+          "package_name": "com.shinepara.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtqBmGmjsxLhDDEQBmJh7J1fEjXL_nFlw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:324857038552:android:fea84fbf9409b181e9f9ad",
+        "android_client_info": {
+          "package_name": "com.shinepara.shinepara_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtqBmGmjsxLhDDEQBmJh7J1fEjXL_nFlw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
