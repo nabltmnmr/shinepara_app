@@ -37,6 +37,7 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
   CameraController? _cameraController;
   FaceDetector? _faceDetector;
   List<CameraDescription>? _cameras;
+  InputImageRotation _lastImageRotation = InputImageRotation.rotation0deg;
 
   bool _isInitialized = false;
   bool _isProcessing = false;
@@ -48,7 +49,9 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
 
   Face? _detectedFace;
   double _brightnessLevel = 0.5;
-  bool _isStable = false;
+  // Assume stable until we have enough accelerometer samples to judge stability.
+  // This avoids blocking auto-capture on emulators/devices where sensors are unavailable.
+  bool _isStable = true;
   double _stabilityScore = 0.0; // 0..1 derived from accelerometer variance
   double _alignmentScore = 0.0; // 0..1 derived from face centering distance
 
@@ -291,7 +294,17 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
         return;
       }
 
-      _updateStatus(faces, image.width.toDouble(), image.height.toDouble());
+      // MLKit bounding boxes are reported in the *upright* image coordinate space,
+      // so when we pass a rotation we must also normalize against the rotated size.
+      double effectiveWidth = image.width.toDouble();
+      double effectiveHeight = image.height.toDouble();
+      if (_lastImageRotation == InputImageRotation.rotation90deg ||
+          _lastImageRotation == InputImageRotation.rotation270deg) {
+        effectiveWidth = image.height.toDouble();
+        effectiveHeight = image.width.toDouble();
+      }
+
+      _updateStatus(faces, effectiveWidth, effectiveHeight);
     } catch (e) {
       debugPrint('Face detection error: $e');
     }
@@ -324,13 +337,11 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
       final sensorOrientation = camera.sensorOrientation;
       InputImageRotation? rotation;
 
-      if (Platform.isIOS) {
-        rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
-      } else if (Platform.isAndroid) {
-        rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
-      }
-
-      rotation ??= InputImageRotation.rotation0deg;
+      // Derive rotation from the sensor orientation; using device orientation here
+      // would be more precise, but this keeps things stable and cross-platform.
+      rotation = InputImageRotationValue.fromRawValue(sensorOrientation) ??
+          InputImageRotation.rotation0deg;
+      _lastImageRotation = rotation;
 
       final format =
           Platform.isAndroid ? InputImageFormat.nv21 : InputImageFormat.bgra8888;
@@ -385,9 +396,10 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
       final isTooClose = faceWidth > 0.7 || faceHeight > 0.8;
       final isTooFar = faceWidth < 0.25 || faceHeight < 0.3;
       final hasGoodLighting = _brightnessLevel > 0.2 && _brightnessLevel < 0.85;
+      final stableOk = _accelerometerHistory.length < _stabilityHistorySize || _isStable;
 
       conditionsGood =
-          isCentered && !isTooClose && !isTooFar && hasGoodLighting && _isStable;
+          isCentered && !isTooClose && !isTooFar && hasGoodLighting && stableOk;
     }
 
     if (_status == CaptureStatus.countdown) {
@@ -431,6 +443,7 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
       final isTooClose = faceWidth > 0.7 || faceHeight > 0.8;
       final isTooFar = faceWidth < 0.25 || faceHeight < 0.3;
       final hasGoodLighting = _brightnessLevel > 0.2 && _brightnessLevel < 0.85;
+      final stableOk = _accelerometerHistory.length < _stabilityHistorySize || _isStable;
 
       // 0..1 score for how close the face center is to the oval center target.
       final dx = (faceCenterX - 0.5).abs();
@@ -446,7 +459,7 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
         newStatus = CaptureStatus.tooFar;
       } else if (!hasGoodLighting) {
         newStatus = CaptureStatus.badLighting;
-      } else if (!_isStable) {
+      } else if (!stableOk) {
         newStatus = CaptureStatus.unstable;
       } else {
         newStatus = CaptureStatus.ready;

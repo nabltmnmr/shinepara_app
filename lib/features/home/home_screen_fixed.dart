@@ -67,13 +67,13 @@ class HomeScreen extends ConsumerWidget {
                     data: (banners) => HeroBannerCard(
                       banner: banners.isNotEmpty ? banners.first : null,
                       fallbackAssetPath: heroAssetPath,
-                      onTapCta: () {},
+                      onTapCta: () => context.push('/skin-scan'),
                     ),
                     loading: () => const _HeroLoadingPlaceholder(),
                     error: (_, __) => HeroBannerCard(
                       banner: null,
                       fallbackAssetPath: heroAssetPath,
-                      onTapCta: () {},
+                      onTapCta: () => context.push('/skin-scan'),
                     ),
                   ),
                 ),
