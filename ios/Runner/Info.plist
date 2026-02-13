@@ -57,6 +57,20 @@
         <key>NSPrivacyPolicyURL</key>
         <string>https://shinepara.com/privacy</string>
         
+        <!-- Privacy - Camera -->
+        <key>NSCameraUsageDescription</key>
+        <string>We use the camera to scan your skin and provide personalized skincare analysis and routines.</string>
+        
+        <!-- Privacy - Photo Library -->
+        <key>NSPhotoLibraryUsageDescription</key>
+        <string>We use your photo library to let you choose a profile picture and upload images for skin analysis.</string>
+        <key>NSPhotoLibraryAddUsageDescription</key>
+        <string>We save images to your photo library only when you choose to download or export them.</string>
+        
+        <!-- Privacy - Microphone -->
+        <key>NSMicrophoneUsageDescription</key>
+        <string>We use the microphone to enable voice features such as voice search and voice assistance when you choose to use them.</string>
+        
         
         <!-- Localization -->
         <key>CFBundleLocalizations</key>
