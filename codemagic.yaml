@@ -78,8 +78,11 @@ workflows:
       - name: Flutter build ipa
         script: |
           # App Store Connect requires CFBundleVersion (build number) to increase
-          # on every upload. Use Codemagic's incrementing build number.
-          flutter build ipa --release --export-method app-store --build-number=$CM_BUILD_NUMBER
+          # on every upload. Codemagic "rebuild" retries can reuse CM_BUILD_NUMBER,
+          # so generate a unique, monotonically increasing build number per run.
+          BUILD_NUMBER=$(date +%s)
+          echo "Using iOS build number: $BUILD_NUMBER"
+          flutter build ipa --release --export-method app-store --build-number=$BUILD_NUMBER
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
