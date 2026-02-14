@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,14 +33,21 @@ void main() async {
     ),
   );
   
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  // Register background handler early. Firebase will be initialized inside it.
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
-  await PushNotificationService().init();
-  
+
+  // Capture startup/runtime errors in release builds (helps diagnose "white screen").
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+    debugPrintStack(stackTrace: details.stack);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught async error: $error');
+    debugPrintStack(stackTrace: stack);
+    return true;
+  };
+
   runApp(
     const ProviderScope(
       child: ShineparaApp(),
@@ -60,12 +68,50 @@ class _ShineparaAppState extends ConsumerState<ShineparaApp> {
   @override
   void initState() {
     super.initState();
-    _initializeAuth();
+    _bootstrap();
   }
 
-  Future<void> _initializeAuth() async {
-    await ref.read(authProvider.notifier).tryAutoLogin();
-    await ref.read(appLocaleProvider.notifier).load();
+  Future<void> _bootstrap() async {
+    // Never let startup services block the first frame.
+    bool firebaseReady = false;
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 20));
+      firebaseReady = true;
+    } catch (e, st) {
+      debugPrint('Firebase init failed: $e');
+      debugPrintStack(stackTrace: st);
+    }
+
+    if (firebaseReady) {
+      try {
+        await PushNotificationService()
+            .init()
+            .timeout(const Duration(seconds: 25));
+      } catch (e, st) {
+        debugPrint('Push init failed: $e');
+        debugPrintStack(stackTrace: st);
+      }
+    }
+
+    try {
+      await ref
+          .read(authProvider.notifier)
+          .tryAutoLogin()
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('Auto login failed: $e');
+    }
+    try {
+      await ref
+          .read(appLocaleProvider.notifier)
+          .load()
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      debugPrint('Locale load failed: $e');
+    }
+
     if (mounted) {
       setState(() {
         _isInitialized = true;
