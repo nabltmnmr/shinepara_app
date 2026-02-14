@@ -56,6 +56,9 @@ workflows:
         bundle_identifier: com.shinepara.app
       vars:
         BUNDLE_ID: "com.shinepara.app"
+        # Required for auto-incrementing iOS build numbers.
+        # Set this in Codemagic workflow Environment variables:
+        # - APP_STORE_APP_ID: numeric Apple ID from App Store Connect (App Information).
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -75,13 +78,18 @@ workflows:
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
+      - name: Set iOS build number from App Store Connect
+        script: |
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID")
+          if [ -z "$LATEST_BUILD" ]; then
+            echo "Could not fetch latest build number. Check APP_STORE_APP_ID and App Store Connect integration."
+            exit 1
+          fi
+          NEW_BUILD=$((LATEST_BUILD + 1))
+          echo "Using build number: $NEW_BUILD"
+          echo "BUILD_NUMBER=$NEW_BUILD" >> $CM_ENV
       - name: Flutter build ipa
         script: |
-          # App Store Connect requires CFBundleVersion (build number) to increase
-          # on every upload. Codemagic "rebuild" retries can reuse CM_BUILD_NUMBER,
-          # so generate a unique, monotonically increasing build number per run.
-          BUILD_NUMBER=$(date +%s)
-          echo "Using iOS build number: $BUILD_NUMBER"
           flutter build ipa --release --export-method app-store --build-number=$BUILD_NUMBER
     artifacts:
       - build/ios/ipa/*.ipa
