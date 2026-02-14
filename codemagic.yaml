@@ -77,7 +77,9 @@ workflows:
           find . -name "Podfile" -execdir pod install \;
       - name: Flutter build ipa
         script: |
-          flutter build ipa --release --export-method app-store
+          # App Store Connect requires CFBundleVersion (build number) to increase
+          # on every upload. Use Codemagic's incrementing build number.
+          flutter build ipa --release --export-method app-store --build-number=$CM_BUILD_NUMBER
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
