@@ -57,6 +57,7 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
 
   int _countdownValue = 3;
   Timer? _countdownTimer;
+  int _countdownBadFrames = 0;
 
   late AnimationController _ringAnimationController;
 
@@ -316,15 +317,49 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
     if (image.planes.isEmpty) return;
 
     final bytes = image.planes[0].bytes;
-    int sum = 0;
-    final sampleSize = min(bytes.length, 10000);
-    final step = bytes.length ~/ sampleSize;
+    if (bytes.isEmpty) return;
 
-    for (int i = 0; i < bytes.length; i += step) {
-      sum += bytes[i];
+    // Android NV21: plane[0] contains luminance (Y) bytes -> OK to sample directly.
+    if (Platform.isAndroid) {
+      int sum = 0;
+      final sampleSize = min(bytes.length, 10000);
+      final step = max(1, bytes.length ~/ sampleSize);
+      int count = 0;
+
+      for (int i = 0; i < bytes.length; i += step) {
+        sum += bytes[i];
+        count++;
+      }
+      if (count == 0) return;
+      _brightnessLevel = sum / (count * 255);
+      return;
     }
 
-    _brightnessLevel = sum / (sampleSize * 255);
+    // iOS BGRA8888: bytes are BGRA pixels. Estimate brightness via luma.
+    // Sample every Nth pixel to keep it fast.
+    if (Platform.isIOS) {
+      const int stride = 4; // BGRA
+      final pixelCount = bytes.length ~/ stride;
+      if (pixelCount <= 0) return;
+
+      final stepPixels = max(1, pixelCount ~/ 2500); // ~2500 samples max
+      double sumLuma = 0;
+      int count = 0;
+
+      for (int p = 0; p < pixelCount; p += stepPixels) {
+        final i = p * stride;
+        if (i + 2 >= bytes.length) break;
+        final b = bytes[i].toDouble();
+        final g = bytes[i + 1].toDouble();
+        final r = bytes[i + 2].toDouble();
+        // Rec. 709 luma approximation.
+        final luma = (0.2126 * r + 0.7152 * g + 0.0722 * b);
+        sumLuma += luma;
+        count++;
+      }
+      if (count == 0) return;
+      _brightnessLevel = (sumLuma / count) / 255.0;
+    }
   }
 
   InputImage? _convertCameraImage(CameraImage image) {
@@ -408,8 +443,14 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
       });
 
       if (!conditionsGood) {
-        _cancelCountdown();
-        _updateStatusFromConditions(faces, imageWidth, imageHeight, face);
+        // Give a little grace during countdown to avoid jitter cancelling instantly.
+        _countdownBadFrames++;
+        if (_countdownBadFrames >= 6) {
+          _cancelCountdown();
+          _updateStatusFromConditions(faces, imageWidth, imageHeight, face);
+        }
+      } else {
+        _countdownBadFrames = 0;
       }
       return;
     }
@@ -494,6 +535,7 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
 
     _ringAnimationController.forward();
     HapticFeedback.lightImpact();
+    _countdownBadFrames = 0;
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -519,6 +561,7 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
     _countdownTimer?.cancel();
     _countdownTimer = null;
     _ringAnimationController.reset();
+    _countdownBadFrames = 0;
     if (_status == CaptureStatus.countdown) {
       setState(() {
         _countdownValue = 3;
@@ -922,6 +965,42 @@ class SkinAnalysisView extends StatelessWidget {
           ),
         ),
 
+        // Manual capture controls (capture mode)
+        if (!showResultCard)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!canStartTest)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text(
+                          'Preview only — add scan credits to start.',
+                          textDirection: TextDirection.ltr,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textOffWhite.withValues(alpha: 0.72),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    _ShutterButton(
+                      onPressed: isLoading ? null : onCtaPressed,
+                      isLoading: isLoading,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
         if (showResultCard)
           // 6) Bottom glass panel + privacy note at bottom (show only after results)
           Positioned(
@@ -1017,6 +1096,63 @@ class SkinAnalysisView extends StatelessWidget {
             child: SafeArea(top: false, child: _PrivacyNote()),
           ),
       ],
+    );
+  }
+}
+
+class _ShutterButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  const _ShutterButton({required this.onPressed, required this.isLoading});
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null && !isLoading;
+    return GestureDetector(
+      onTap: enabled ? onPressed : null,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: enabled ? 1.0 : 0.55,
+        child: Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.14),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.55),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 22,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colors.white,
+                  ),
+                )
+              : Container(
+                  width: 54,
+                  height: 54,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary,
+                  ),
+                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 22),
+                ),
+        ),
+      ),
     );
   }
 }
