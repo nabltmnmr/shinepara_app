@@ -6,6 +6,7 @@ import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/widgets/shine_app_bar.dart';
 import '../../core/localization/shine_strings.dart';
+import '../../core/widgets/category_card.dart';
 import '../../services/providers.dart';
 import 'widgets/brand_chips_row.dart';
 import 'widgets/hero_banner_card.dart';
@@ -29,6 +30,7 @@ class HomeScreen extends ConsumerWidget {
     final bannersAsync = ref.watch(bannersProvider);
     final brandsAsync = ref.watch(brandsProvider);
     final bestSellersAsync = ref.watch(bestSellersProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
     final cartItems = ref.watch(cartProvider);
     final unreadCountAsync = ref.watch(unreadNotificationCountProvider);
 
@@ -131,6 +133,56 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       loading: () => const Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      ),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 22)),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      context.tr('categories'),
+                      style: AppTextStyles.sectionTitle.copyWith(
+                        color: AppColors.textOffWhite,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 28,
+                      ),
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: categoriesAsync.when(
+                      data: (categoryList) {
+                        if (categoryList.isEmpty) return const SizedBox.shrink();
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 0.56,
+                          ),
+                          itemCount: categoryList.length,
+                          itemBuilder: (context, index) {
+                            final category = categoryList[index];
+                            return CategoryCard(
+                              category: category,
+                              onTap: () => context.push('/products?categoryId=${category.id}'),
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
                         child: Center(
                           child: CircularProgressIndicator(color: AppColors.primary),
                         ),
