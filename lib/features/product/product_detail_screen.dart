@@ -8,6 +8,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/iqd_currency.dart';
 import '../../core/utils/navigation_utils.dart';
 import '../../models/product_review.dart';
 import '../../services/providers.dart';
@@ -32,7 +33,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final productAsync = ref.watch(productDetailProvider(widget.productId));
     final wishlist = ref.watch(wishlistProvider);
     final cartItems = ref.watch(cartProvider);
-    final priceFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 
     return Directionality(
       textDirection: ui.TextDirection.ltr,
@@ -188,7 +188,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                priceFormatter.format(product.displayPrice),
+                                IqdCurrency.format(product.displayPrice),
                                 style: AppTextStyles.headlineSmall.copyWith(
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w700,

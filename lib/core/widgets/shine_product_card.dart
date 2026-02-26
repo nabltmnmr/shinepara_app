@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../theme/colors.dart';
 import '../theme/text_styles.dart';
+import '../utils/iqd_currency.dart';
 import '../../models/product.dart';
 import '../../services/providers.dart';
 
@@ -29,8 +29,7 @@ class ShineProductCard extends ConsumerWidget {
     final isOutOfStock = product.stock <= 0;
 
     if (compact) {
-      final formatter = NumberFormat('#,###', 'ar');
-      return _buildCompact(context, ref, isInWishlist, formatter, imageUrl, isOutOfStock);
+      return _buildCompact(context, ref, isInWishlist, imageUrl, isOutOfStock);
     }
 
     return _buildGrid(context, ref, isInWishlist, imageUrl, isOutOfStock);
@@ -53,7 +52,7 @@ class ShineProductCard extends ConsumerWidget {
     final category = _categoryLabel(product);
     final title = product.nameEn.trim().isNotEmpty ? product.nameEn.trim() : product.nameAr.trim();
     final subtitle = _subtitle(product);
-    final priceText = '\$${product.displayPrice.toStringAsFixed(2)}';
+    final priceText = IqdCurrency.format(product.displayPrice);
 
     return GestureDetector(
       onTap: isOutOfStock ? null : onTap,
@@ -241,7 +240,6 @@ class ShineProductCard extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     bool isInWishlist,
-    NumberFormat formatter,
     String imageUrl,
     bool isOutOfStock,
   ) {
@@ -287,7 +285,7 @@ class ShineProductCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${formatter.format(product.displayPrice)} د.ع',
+                    IqdCurrency.format(product.displayPrice),
                     style: AppTextStyles.price,
                   ),
                 ],

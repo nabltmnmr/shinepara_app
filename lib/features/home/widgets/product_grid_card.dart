@@ -6,6 +6,7 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../models/product.dart';
 import '../../../services/providers.dart';
+import '../../../core/utils/iqd_currency.dart';
 
 class ProductGridCard extends ConsumerWidget {
   final List<Product> products;
@@ -245,7 +246,7 @@ class _ProductCard extends StatelessWidget {
                                 ),
                                 const Spacer(),
                                 Text(
-                                  '\$${product.displayPrice.toStringAsFixed(2)}',
+                                  IqdCurrency.format(product.displayPrice),
                                   style: AppTextStyles.titleLarge.copyWith(
                                     color: AppColors.white,
                                     fontWeight: FontWeight.w900,

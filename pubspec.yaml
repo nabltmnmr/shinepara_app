@@ -47,21 +47,23 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo.png"
-  adaptive_icon_background: "#0A1931"
-  adaptive_icon_foreground: "assets/logo.png"
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#2C1714"
+  adaptive_icon_foreground: "assets/app_icon.png"
+  remove_alpha_ios: true
   min_sdk_android: 21
 
 flutter_native_splash:
-  color: "#0A1931"
-  color_dark: "#0A1931"
+  color: "#2D1714"
+  color_dark: "#2D1714"
   android_12:
-    color: "#0A1931"
-    icon_background_color: "#0A1931"
+    color: "#2D1714"
+    icon_background_color: "#2D1714"
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/app_icon.png
     - assets/logo.png
     - assets/splash_video.mp4

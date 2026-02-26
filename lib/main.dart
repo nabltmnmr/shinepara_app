@@ -8,7 +8,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
-import 'features/splash/splash_screen.dart';
+import 'features/splash/video_splash_screen.dart';
 import 'services/push_notification_service.dart';
 import 'services/providers.dart';
 
@@ -64,6 +64,7 @@ class ShineparaApp extends ConsumerStatefulWidget {
 
 class _ShineparaAppState extends ConsumerState<ShineparaApp> {
   bool _isInitialized = false;
+  bool _videoDone = false;
 
   @override
   void initState() {
@@ -121,11 +122,28 @@ class _ShineparaAppState extends ConsumerState<ShineparaApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
+    if (!_videoDone) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const SplashScreen(showLoader: true),
+        home: VideoSplashScreen(
+          key: const ValueKey('video-splash'),
+          allowSkip: false,
+          onDone: () {
+            if (mounted) {
+              setState(() {
+                _videoDone = true;
+              });
+            }
+          },
+        ),
+      );
+    }
+
+    if (!_isInitialized) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: _InitHoldScreen(),
       );
     }
 
@@ -152,6 +170,18 @@ class _ShineparaAppState extends ConsumerState<ShineparaApp> {
           child: child!,
         );
       },
+    );
+  }
+}
+
+class _InitHoldScreen extends StatelessWidget {
+  const _InitHoldScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF2D1714),
+      body: SizedBox.expand(),
     );
   }
 }

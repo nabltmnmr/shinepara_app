@@ -8,7 +8,7 @@ import '../../core/widgets/shine_scaffold.dart';
 import '../../core/widgets/shine_glass_panel.dart';
 import '../../core/widgets/shine_primary_button.dart';
 import '../../services/providers.dart';
-import 'package:intl/intl.dart' hide TextDirection;
+import '../../core/utils/iqd_currency.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -226,7 +226,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cartItems = ref.watch(cartProvider);
     final cartNotifier = ref.read(cartProvider.notifier);
     final shippingSettings = ref.watch(shippingSettingsProvider);
-    final formatter = NumberFormat('#,###', 'ar');
 
     if (cartItems.isEmpty) {
       return ShineScaffold(
@@ -402,7 +401,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${formatter.format(item.totalPrice)} د.ع',
+                            IqdCurrency.format(item.totalPrice),
                             style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
                           ),
                           Expanded(
@@ -426,12 +425,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         
                         return Column(
                           children: [
-                            _buildPriceRow('المجموع الفرعي', subtotal, formatter),
+                            _buildPriceRow('المجموع الفرعي', subtotal),
                             const SizedBox(height: 8),
                             _buildPriceRow(
                               'رسوم التوصيل',
                               shipping,
-                              formatter,
                               isFree: shipping == 0,
                             ),
                             if (shipping == 0 && settings.freeShippingThreshold > 0) ...[
@@ -440,7 +438,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 width: double.infinity,
                                 padding: const EdgeInsets.symmetric(vertical: 4),
                                 child: Text(
-                                  'توصيل مجاني للطلبات أكثر من ${formatter.format(settings.freeShippingThreshold)} د.ع',
+                                  'توصيل مجاني للطلبات أكثر من ${IqdCurrency.format(settings.freeShippingThreshold)}',
                                   style: AppTextStyles.labelSmall.copyWith(color: AppColors.success),
                                   textDirection: TextDirection.rtl,
                                   textAlign: TextAlign.center,
@@ -452,7 +450,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               _buildPriceRow(
                                 'خصم الكوبون',
                                 -_couponDiscount,
-                                formatter,
                                 isDiscount: true,
                               ),
                             ],
@@ -461,7 +458,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '${formatter.format(total)} د.ع',
+                                  IqdCurrency.format(total),
                                   style: AppTextStyles.titleLarge.copyWith(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
@@ -477,8 +474,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ],
                         );
                       },
-                      loading: () => _buildPriceRow('المجموع', cartNotifier.totalPrice, formatter),
-                      error: (_, __) => _buildPriceRow('المجموع', cartNotifier.totalPrice, formatter),
+                      loading: () => _buildPriceRow('المجموع', cartNotifier.totalPrice),
+                      error: (_, __) => _buildPriceRow('المجموع', cartNotifier.totalPrice),
                     ),
                   ],
                 ),
@@ -636,7 +633,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPriceRow(String label, double amount, NumberFormat formatter, {bool isFree = false, bool isDiscount = false}) {
+  Widget _buildPriceRow(String label, double amount, {bool isFree = false, bool isDiscount = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -644,8 +641,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           isFree
               ? 'مجاني'
               : isDiscount
-                  ? '-${formatter.format(amount.abs())} د.ع'
-                  : '${formatter.format(amount)} د.ع',
+                  ? '-${IqdCurrency.format(amount.abs())}'
+                  : IqdCurrency.format(amount),
           style: AppTextStyles.bodyMedium.copyWith(
             color: isFree || isDiscount ? AppColors.success : AppColors.textPrimary,
             fontWeight: isFree || isDiscount ? FontWeight.w600 : null,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import '../theme/text_styles.dart';
+import '../utils/iqd_currency.dart';
 import '../../models/product.dart';
 import '../../services/providers.dart';
 
@@ -21,7 +21,6 @@ class ProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wishlist = ref.watch(wishlistProvider);
     final isInWishlist = wishlist.contains(product.id);
-    final formatter = NumberFormat('#,###', 'ar');
     final imageUrl = product.imageUrl ?? '';
     final isOutOfStock = product.stock <= 0;
 
@@ -182,13 +181,13 @@ class ProductCard extends ConsumerWidget {
                         const SizedBox(width: 4),
                         if (product.hasDiscount && !isOutOfStock) ...[
                           Text(
-                            formatter.format(product.price),
+                            IqdCurrency.format(product.price, withSymbol: false),
                             style: AppTextStyles.oldPrice,
                           ),
                           const SizedBox(width: 8),
                         ],
                         Text(
-                          formatter.format(product.displayPrice),
+                          IqdCurrency.format(product.displayPrice, withSymbol: false),
                           style: AppTextStyles.price.copyWith(
                             color: isOutOfStock ? AppColors.textLight : null,
                           ),

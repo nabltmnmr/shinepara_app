@@ -9,6 +9,7 @@ import '../../core/localization/shine_strings.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/utils/navigation_utils.dart';
+import '../../core/utils/iqd_currency.dart';
 import '../../models/product.dart';
 import '../../services/providers.dart';
 
@@ -541,7 +542,7 @@ class _RecommendedCard extends ConsumerWidget {
                   Row(
                     children: [
                       Text(
-                        '\$${product.displayPrice.toStringAsFixed(2)}',
+                        IqdCurrency.format(product.displayPrice),
                         style: AppTextStyles.titleMedium.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w900,

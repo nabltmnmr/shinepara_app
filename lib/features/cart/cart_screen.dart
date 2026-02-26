@@ -8,6 +8,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../../core/localization/shine_strings.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/iqd_currency.dart';
 import '../../core/utils/navigation_utils.dart';
 import '../../models/cart_item.dart';
 import '../../services/providers.dart';
@@ -19,7 +20,6 @@ class CartScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cartItems = ref.watch(cartProvider);
     final cartNotifier = ref.read(cartProvider.notifier);
-    final money = NumberFormat.currency(symbol: 'IQD ', decimalDigits: 0);
     final subtotal = cartItems.fold<double>(0, (sum, item) => sum + item.totalPrice);
     final shippingAsync = ref.watch(shippingSettingsProvider);
     final shipping = cartItems.isEmpty
@@ -115,7 +115,6 @@ class CartScreen extends ConsumerWidget {
                               for (final item in cartItems)
                                 _CartItemCard(
                                   item: item,
-                                  money: money,
                                   onRemove: () => cartNotifier.removeFromCart(item.productId),
                                   onMinus: () => cartNotifier.updateQuantity(item.productId, item.quantity - 1),
                                   onPlus: () => cartNotifier.updateQuantity(item.productId, item.quantity + 1),
@@ -129,7 +128,6 @@ class CartScreen extends ConsumerWidget {
                                 subtotal: subtotal,
                                 shipping: shipping,
                                 total: total,
-                                money: money,
                               ),
                             ],
                           ),
@@ -192,14 +190,12 @@ class _OverlayCircleIconButton extends StatelessWidget {
 
 class _CartItemCard extends StatelessWidget {
   final CartItem item;
-  final NumberFormat money;
   final VoidCallback onRemove;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
 
   const _CartItemCard({
     required this.item,
-    required this.money,
     required this.onRemove,
     required this.onMinus,
     required this.onPlus,
@@ -268,7 +264,7 @@ class _CartItemCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  money.format(item.product.displayPrice),
+                  IqdCurrency.format(item.product.displayPrice),
                   style: AppTextStyles.headlineSmall.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w900,
@@ -486,13 +482,11 @@ class _TotalsCard extends StatelessWidget {
   final double subtotal;
   final double shipping;
   final double total;
-  final NumberFormat money;
 
   const _TotalsCard({
     required this.subtotal,
     required this.shipping,
     required this.total,
-    required this.money,
   });
 
   @override
@@ -506,16 +500,16 @@ class _TotalsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _SummaryRow(label: context.tr('cart_subtotal'), value: money.format(subtotal), valueColor: AppColors.white),
+          _SummaryRow(label: context.tr('cart_subtotal'), value: IqdCurrency.format(subtotal), valueColor: AppColors.white),
           const SizedBox(height: 14),
-          _SummaryRow(label: context.tr('cart_shipping'), value: money.format(shipping), valueColor: AppColors.white),
+          _SummaryRow(label: context.tr('cart_shipping'), value: IqdCurrency.format(shipping), valueColor: AppColors.white),
           const SizedBox(height: 16),
           Divider(color: AppColors.white.withOpacity(0.10), height: 1),
           const SizedBox(height: 16),
           Row(
             children: [
               Text(
-                money.format(total),
+                IqdCurrency.format(total),
                 style: AppTextStyles.headlineMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w900,

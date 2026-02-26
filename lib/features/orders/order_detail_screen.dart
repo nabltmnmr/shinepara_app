@@ -7,6 +7,7 @@ import '../../core/theme/text_styles.dart';
 import '../../core/widgets/shine_scaffold.dart';
 import '../../core/widgets/shine_glass_panel.dart';
 import '../../core/widgets/shine_primary_button.dart';
+import '../../core/utils/iqd_currency.dart';
 import '../../services/providers.dart';
 import 'package:intl/intl.dart';
 
@@ -18,7 +19,6 @@ class OrderDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final order = ref.watch(orderDetailProvider(orderId));
-    final formatter = NumberFormat('#,###', 'ar');
     final dateFormatter = DateFormat('yyyy/MM/dd - HH:mm', 'ar');
 
     return ShineScaffold(
@@ -108,7 +108,7 @@ class OrderDetailScreen extends ConsumerWidget {
                           child: Row(
                             children: [
                               Text(
-                                '${formatter.format(item.subtotal)} د.ع',
+                                IqdCurrency.format(item.subtotal),
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
@@ -125,7 +125,7 @@ class OrderDetailScreen extends ConsumerWidget {
                                       textDirection: ui.TextDirection.rtl,
                                     ),
                                     Text(
-                                      '${formatter.format(item.unitPrice)} د.ع × ${item.quantity}',
+                                      '${IqdCurrency.format(item.unitPrice)} × ${item.quantity}',
                                       style: AppTextStyles.bodySmall.copyWith(
                                         color: AppColors.textSecondary,
                                       ),
@@ -153,14 +153,14 @@ class OrderDetailScreen extends ConsumerWidget {
                         textDirection: ui.TextDirection.rtl,
                       ),
                       const SizedBox(height: 12),
-                      _buildPriceRow('المجموع الفرعي', orderData.subtotal, formatter),
-                      _buildPriceRow('رسوم التوصيل', orderData.shippingFee, formatter),
+                      _buildPriceRow('المجموع الفرعي', orderData.subtotal),
+                      _buildPriceRow('رسوم التوصيل', orderData.shippingFee),
                       const Divider(),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${formatter.format(orderData.total)} د.ع',
+                            IqdCurrency.format(orderData.total),
                             style: AppTextStyles.titleMedium.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -333,14 +333,14 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPriceRow(String label, double value, NumberFormat formatter) {
+  Widget _buildPriceRow(String label, double value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${formatter.format(value)} د.ع',
+            IqdCurrency.format(value),
             style: AppTextStyles.bodyMedium,
           ),
           Text(

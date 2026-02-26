@@ -7,6 +7,7 @@ import '../../core/theme/text_styles.dart';
 import '../../core/widgets/shine_scaffold.dart';
 import '../../core/widgets/shine_glass_panel.dart';
 import '../../core/widgets/shine_primary_button.dart';
+import '../../core/utils/iqd_currency.dart';
 import '../../services/providers.dart';
 import '../../models/order.dart';
 import 'package:intl/intl.dart';
@@ -113,7 +114,6 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###', 'ar');
     final dateFormatter = DateFormat('yyyy/MM/dd', 'ar');
 
     return Padding(
@@ -149,7 +149,7 @@ class _OrderCard extends StatelessWidget {
                       style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                     ),
                     Text(
-                      '${formatter.format(order.total)} د.ع',
+                      IqdCurrency.format(order.total),
                       style: AppTextStyles.titleMedium.copyWith(color: AppColors.primary),
                       textDirection: ui.TextDirection.rtl,
                     ),
