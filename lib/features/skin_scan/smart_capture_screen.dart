@@ -11,6 +11,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/image_orientation.dart';
 import '../../services/providers.dart';
 
 enum CaptureStatus {
@@ -596,7 +597,10 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
       HapticFeedback.mediumImpact();
 
       if (mounted) {
-        context.push('/skin-scan/processing', extra: File(image.path));
+        final normalized = await ImageOrientation.bakeExifOrientationIfNeeded(
+          File(image.path),
+        );
+        context.push('/skin-scan/processing', extra: normalized);
       }
     } catch (e) {
       setState(() {
@@ -609,13 +613,35 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
   }
 
   void manualCapture() {
-    final canStartTest = ref.read(scanCreditsProvider).when(
-          data: (credits) => credits.credits > 0,
-          loading: () => false,
-          error: (_, __) => false,
-        );
+    final creditsAsync = ref.read(scanCreditsProvider);
+    final isLoadingCredits = creditsAsync.isLoading;
+    final hasCreditsError = creditsAsync.hasError;
+    final canStartTest = creditsAsync.maybeWhen(
+      data: (credits) => credits.credits > 0,
+      orElse: () => false,
+    );
+
+    if (isLoadingCredits) {
+      _showError('جاري تحميل رصيد الفحوصات…');
+      return;
+    }
+    if (hasCreditsError) {
+      _showError('تعذر تحميل رصيد الفحوصات. تحقق من الإنترنت ثم حاول مرة أخرى.');
+      return;
+    }
     if (!canStartTest) {
-      _showError('لا يوجد رصيد كافٍ لبدء الفحص');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Preview only — add scan credits to start.'),
+          backgroundColor: AppColors.error,
+          action: SnackBarAction(
+            label: 'Get credits',
+            textColor: AppColors.white,
+            onPressed: () => context.go('/skin-scan'),
+          ),
+        ),
+      );
       return;
     }
 
@@ -708,7 +734,7 @@ class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
                     textureProgress: alignmentScore == 0.0 ? null : alignmentScore,
                     canStartTest: canStartTest,
                     isLoading: isCapturing,
-                    onCtaPressed: (!canStartTest || isCapturing) ? null : manualCapture,
+                    onCtaPressed: isCapturing ? null : manualCapture,
                     showResultCard: false,
                   );
                 },
@@ -813,9 +839,7 @@ class EmbeddedSmartCaptureSectionState extends ConsumerState<EmbeddedSmartCaptur
               textureProgress: alignmentScore == 0.0 ? null : alignmentScore,
               canStartTest: canStartTest,
               isLoading: isCapturing,
-              onCtaPressed: (!isInitialized || !canStartTest || isCapturing)
-                  ? null
-                  : manualCapture,
+              onCtaPressed: (!isInitialized || isCapturing) ? null : manualCapture,
               showResultCard: false,
             );
           },

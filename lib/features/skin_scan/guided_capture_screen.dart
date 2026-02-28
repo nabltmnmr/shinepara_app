@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:camera/camera.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/image_orientation.dart';
 
 class GuidedCaptureScreen extends ConsumerStatefulWidget {
   const GuidedCaptureScreen({super.key});
@@ -97,7 +98,10 @@ class _GuidedCaptureScreenState extends ConsumerState<GuidedCaptureScreen> {
       final image = await _controller!.takePicture();
       
       if (mounted) {
-        context.push('/skin-scan/processing', extra: File(image.path));
+        final normalized = await ImageOrientation.bakeExifOrientationIfNeeded(
+          File(image.path),
+        );
+        context.push('/skin-scan/processing', extra: normalized);
       }
     } catch (e) {
       setState(() => _isCapturing = false);

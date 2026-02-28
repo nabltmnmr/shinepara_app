@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
+import '../../core/utils/image_orientation.dart';
 import '../../services/providers.dart';
 
 class NewScanScreen extends ConsumerStatefulWidget {
@@ -232,7 +233,10 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
       );
       if (image != null) {
         if (mounted) {
-          context.push('/skin-scan/processing', extra: File(image.path));
+          final normalized = await ImageOrientation.bakeExifOrientationIfNeeded(
+            File(image.path),
+          );
+          context.push('/skin-scan/processing', extra: normalized);
         }
       }
     } catch (e) {

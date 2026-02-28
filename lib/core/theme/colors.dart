@@ -10,7 +10,7 @@ class AppColors {
   static const Color appBarBackground = Color(0xFF2B130F);
   static const Color bottomNavBackground = Color(0xFF2B1410);
   static const Color iconTint = Color(0xFF9E7B72);
-  static const Color brandCircleBackground = Color(0xFF5D5D5D);
+  static const Color brandCircleBackground = Color(0xFFFFFFFF);
 
   // Background & surfaces
   static const Color background = Color(0xFF2D1714); // page background
