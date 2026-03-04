@@ -22,11 +22,19 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  ConsumerState<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
-  int _tabIndex = 0; // 0: Description, 1: How to Use, 2: Ingredients, 3: Reviews
+  int _tabIndex =
+      0; // 0: Description, 1: How to Use, 2: Ingredients, 3: Reviews
+
+  static final RegExp _arabicRegex = RegExp(r'[\u0600-\u06FF]');
+
+  TextDirection _directionForText(String text) {
+    return _arabicRegex.hasMatch(text) ? TextDirection.rtl : TextDirection.ltr;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +68,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
             final isInWishlist = wishlist.contains(product.id);
             final imageUrl = (product.imageUrl ?? '').trim();
-            final title = product.nameEn.trim().isNotEmpty ? product.nameEn.trim() : product.nameAr.trim();
-            final description = product.descriptionEn.trim().isNotEmpty
-                ? product.descriptionEn.trim()
-                : product.descriptionAr.trim();
+            final title = product.nameEn.trim().isNotEmpty
+                ? product.nameEn.trim()
+                : product.nameAr.trim();
+            final description = product.descriptionAr.trim().isNotEmpty
+                ? product.descriptionAr.trim()
+                : product.descriptionEn.trim();
             final howToUse = (product.usage ?? '').trim();
             final ingredients = (product.ingredients ?? '').trim();
 
@@ -71,7 +81,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               builder: (context, constraints) {
                 // Height reserved by the sticky bottom bar for internal paddings.
                 const bottomBarHeight = 108.0;
-                final heroHeight = (constraints.maxHeight * 0.62).clamp(360.0, 560.0);
+                final heroHeight =
+                    (constraints.maxHeight * 0.62).clamp(360.0, 560.0);
 
                 return Stack(
                   children: [
@@ -91,7 +102,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    AppColors.background.withValues(alpha: 0.92),
+                                    AppColors.background
+                                        .withValues(alpha: 0.92),
                                   ],
                                   stops: const [0.55, 1.0],
                                 ),
@@ -115,9 +127,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       top: MediaQuery.of(context).padding.top + 12,
                       right: 16,
                       child: _OverlayCircleIconButton(
-                        icon: isInWishlist ? Icons.favorite : Icons.favorite_border,
-                        iconColor: isInWishlist ? AppColors.white : AppColors.textOffWhite,
-                        onTap: () => ref.read(wishlistProvider.notifier).toggleWishlist(product.id),
+                        icon: isInWishlist
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        iconColor: isInWishlist
+                            ? AppColors.white
+                            : AppColors.textOffWhite,
+                        onTap: () => ref
+                            .read(wishlistProvider.notifier)
+                            .toggleWishlist(product.id),
                       ),
                     ),
 
@@ -127,10 +145,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       minChildSize: 0.46,
                       maxChildSize: 0.92,
                       builder: (context, scrollController) {
-                        final bottomInset = MediaQuery.of(context).padding.bottom;
+                        final bottomInset =
+                            MediaQuery.of(context).padding.bottom;
                         final Widget tabBody = switch (_tabIndex) {
                           0 => Text(
                               description,
+                              textDirection: _directionForText(description),
+                              textAlign: TextAlign.start,
                               style: AppTextStyles.bodyLarge.copyWith(
                                 color: AppColors.textSecondary,
                                 height: 1.65,
@@ -139,6 +160,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             ),
                           1 => Text(
                               howToUse.isNotEmpty ? howToUse : '—',
+                              textDirection: _directionForText(howToUse),
+                              textAlign: TextAlign.start,
                               style: AppTextStyles.bodyLarge.copyWith(
                                 color: AppColors.textSecondary,
                                 height: 1.65,
@@ -147,6 +170,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             ),
                           2 => Text(
                               ingredients.isNotEmpty ? ingredients : '—',
+                              textDirection: _directionForText(ingredients),
+                              textAlign: TextAlign.start,
                               style: AppTextStyles.bodyLarge.copyWith(
                                 color: AppColors.textSecondary,
                                 height: 1.65,
@@ -160,18 +185,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         return Container(
                           decoration: BoxDecoration(
                             color: AppColors.background,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(36)),
                           ),
                           child: ListView(
                             controller: scrollController,
-                            padding: EdgeInsets.fromLTRB(24, 12, 24, bottomBarHeight + bottomInset + 16),
+                            padding: EdgeInsets.fromLTRB(
+                                24, 12, 24, bottomBarHeight + bottomInset + 16),
                             children: [
                               Center(
                                 child: Container(
                                   height: 4,
                                   width: 44,
                                   decoration: BoxDecoration(
-                                    color: AppColors.iconTint.withValues(alpha: 0.45),
+                                    color: AppColors.iconTint
+                                        .withValues(alpha: 0.45),
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                 ),
@@ -203,29 +231,35 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 decoration: BoxDecoration(
                                   color: AppColors.productDetailsTabsBg,
                                   borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(color: AppColors.white.withValues(alpha: 0.06)),
+                                  border: Border.all(
+                                      color: AppColors.white
+                                          .withValues(alpha: 0.06)),
                                 ),
                                 child: Row(
                                   children: [
                                     _SegmentTab(
                                       label: 'Description',
                                       selected: _tabIndex == 0,
-                                      onTap: () => setState(() => _tabIndex = 0),
+                                      onTap: () =>
+                                          setState(() => _tabIndex = 0),
                                     ),
                                     _SegmentTab(
                                       label: 'How to Use',
                                       selected: _tabIndex == 1,
-                                      onTap: () => setState(() => _tabIndex = 1),
+                                      onTap: () =>
+                                          setState(() => _tabIndex = 1),
                                     ),
                                     _SegmentTab(
                                       label: 'Ingredients',
                                       selected: _tabIndex == 2,
-                                      onTap: () => setState(() => _tabIndex = 2),
+                                      onTap: () =>
+                                          setState(() => _tabIndex = 2),
                                     ),
                                     _SegmentTab(
                                       label: 'Reviews',
                                       selected: _tabIndex == 3,
-                                      onTap: () => setState(() => _tabIndex = 3),
+                                      onTap: () =>
+                                          setState(() => _tabIndex = 3),
                                     ),
                                   ],
                                 ),
@@ -243,7 +277,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               },
             );
           },
-          loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => Center(
+              child: CircularProgressIndicator(color: AppColors.primary)),
           error: (_, __) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -253,7 +288,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 Text('Failed to load product', style: AppTextStyles.bodyMedium),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () => ref.invalidate(productDetailProvider(widget.productId)),
+                  onPressed: () =>
+                      ref.invalidate(productDetailProvider(widget.productId)),
                   child: const Text('Retry'),
                 ),
               ],
@@ -266,23 +302,29 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             return _BottomActionBar(
               productId: product.id,
               onAddToBag: (qty) {
-                final existing = cartItems.where((i) => i.productId == product.id).toList();
-                final currentQty = existing.isNotEmpty ? existing.first.quantity : 0;
+                final existing =
+                    cartItems.where((i) => i.productId == product.id).toList();
+                final currentQty =
+                    existing.isNotEmpty ? existing.first.quantity : 0;
 
                 if (currentQty == 0) {
                   ref.read(cartProvider.notifier).addToCart(product);
                 }
-                ref.read(cartProvider.notifier).updateQuantity(product.id, currentQty + qty);
+                ref
+                    .read(cartProvider.notifier)
+                    .updateQuantity(product.id, currentQty + qty);
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    backgroundColor: AppColors.bottomNavBackground.withValues(alpha: 0.92),
+                    backgroundColor:
+                        AppColors.bottomNavBackground.withValues(alpha: 0.92),
                     behavior: SnackBarBehavior.floating,
                     elevation: 0,
                     margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: AppColors.white.withValues(alpha: 0.08)),
+                      side: BorderSide(
+                          color: AppColors.white.withValues(alpha: 0.08)),
                     ),
                     content: Row(
                       children: [
@@ -380,7 +422,8 @@ class _HeroImage extends StatelessWidget {
       return Container(
         color: AppColors.bottomNavBackground,
         alignment: Alignment.center,
-        child: Icon(Icons.image_not_supported, size: 64, color: AppColors.iconTint),
+        child: Icon(Icons.image_not_supported,
+            size: 64, color: AppColors.iconTint),
       );
     }
 
@@ -395,7 +438,8 @@ class _HeroImage extends StatelessWidget {
       errorWidget: (_, __, ___) => Container(
         color: AppColors.bottomNavBackground,
         alignment: Alignment.center,
-        child: Icon(Icons.image_not_supported, size: 64, color: AppColors.iconTint),
+        child: Icon(Icons.image_not_supported,
+            size: 64, color: AppColors.iconTint),
       ),
     );
   }
@@ -424,10 +468,12 @@ class _OverlayCircleIconButton extends StatelessWidget {
             width: 54,
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.18),
-              border: Border.all(color: AppColors.white.withValues(alpha: 0.14), width: 1.2),
+              border: Border.all(
+                  color: AppColors.white.withValues(alpha: 0.14), width: 1.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor ?? AppColors.textOffWhite, size: 28),
+            child: Icon(icon,
+                color: iconColor ?? AppColors.textOffWhite, size: 28),
           ),
         ),
       ),
@@ -637,7 +683,8 @@ class _ReviewsTab extends ConsumerWidget {
       },
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 18),
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        child:
+            Center(child: CircularProgressIndicator(color: AppColors.primary)),
       ),
       error: (_, __) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -646,17 +693,21 @@ class _ReviewsTab extends ConsumerWidget {
           children: [
             Text(
               'Failed to load reviews.',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.bodyMedium
+                  .copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 10),
             SizedBox(
               height: 44,
               child: OutlinedButton(
-                onPressed: () => ref.read(productReviewsProvider(productId).notifier).refresh(),
+                onPressed: () => ref
+                    .read(productReviewsProvider(productId).notifier)
+                    .refresh(),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textOffWhite,
                   side: BorderSide(color: AppColors.white.withAlpha(20)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999)),
                 ),
                 child: const Text('Retry'),
               ),
@@ -709,7 +760,8 @@ class _ReviewsSummaryCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 '$count review${count == 1 ? '' : 's'}',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -725,7 +777,8 @@ class _ReviewsSummaryCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 minimumSize: const Size(0, 44),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999)),
               ),
               child: Text(
                 isLoggedIn ? 'Write a review' : 'Login to review',
@@ -779,7 +832,8 @@ class _ReviewTile extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 dateText,
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -856,7 +910,9 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
         return;
       }
 
-      await ref.read(productReviewsProvider(widget.productId).notifier).addReview(
+      await ref
+          .read(productReviewsProvider(widget.productId).notifier)
+          .addReview(
             rating: _rating,
             comment: _controller.text,
             userName: user.fullName,
@@ -869,7 +925,8 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
             backgroundColor: AppColors.bottomNavBackground,
             content: Text(
               'Review submitted',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textOffWhite),
+              style: AppTextStyles.bodyMedium
+                  .copyWith(color: AppColors.textOffWhite),
             ),
           ),
         );
@@ -949,7 +1006,8 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 1.2),
                 ),
               ),
             ),
@@ -963,7 +1021,8 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 child: _submitting
                     ? const SizedBox(

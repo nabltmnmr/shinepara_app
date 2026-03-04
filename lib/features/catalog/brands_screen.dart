@@ -19,10 +19,13 @@ class BrandsScreen extends ConsumerStatefulWidget {
 class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   final Map<String, GlobalKey> _sectionKeys = {};
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -34,7 +37,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       body: SafeArea(
         child: brands.when(
           data: (brandList) {
-            final grouped = _groupBrands(brandList);
+            final filteredBrands = _filterBrands(brandList, _query);
+            final grouped = _groupBrands(filteredBrands);
             final letters = grouped.keys.toList()..sort();
 
             return Stack(
@@ -47,7 +51,18 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                       _buildHeader(context),
                       _buildSearch(),
                       const SizedBox(height: 12),
-                      ...letters.map((letter) => _buildSection(letter, grouped[letter]!)),
+                      if (filteredBrands.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Text(
+                            'لا توجد نتائج',
+                            style: AppTextStyles.bodyMedium
+                                .copyWith(color: AppColors.textMuted),
+                            textDirection: TextDirection.rtl,
+                          ),
+                        ),
+                      ...letters.map(
+                          (letter) => _buildSection(letter, grouped[letter]!)),
                     ],
                   ),
                 ),
@@ -100,7 +115,10 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
+        controller: _searchController,
         textAlign: TextAlign.right,
+        textDirection: TextDirection.rtl,
+        onChanged: (value) => setState(() => _query = value.trim()),
         decoration: InputDecoration(
           hintText: ShineStrings.of(context, 'brands_search_hint'),
           prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
@@ -143,7 +161,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               const SizedBox(width: 12),
               Text(
                 letter.toUpperCase(),
-                style: AppTextStyles.headlineSmall.copyWith(color: AppColors.white),
+                style: AppTextStyles.headlineSmall
+                    .copyWith(color: AppColors.white),
               ),
             ],
           ),
@@ -212,5 +231,14 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       grouped.putIfAbsent(letter, () => []).add(brand);
     }
     return grouped;
+  }
+
+  List<dynamic> _filterBrands(List<dynamic> brands, String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return brands;
+    return brands.where((brand) {
+      final name = (brand.name ?? '').toString().toLowerCase();
+      return name.contains(q);
+    }).toList();
   }
 }

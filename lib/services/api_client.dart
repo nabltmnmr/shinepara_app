@@ -26,8 +26,8 @@ class ApiClient {
     required this.baseUrl,
     Dio? dio,
     CookieJar? cookieJar,
-  }) : cookieJar = cookieJar ?? CookieJar(),
-       _dio = dio ?? Dio() {
+  })  : cookieJar = cookieJar ?? CookieJar(),
+        _dio = dio ?? Dio() {
     _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 120);
     _dio.options.receiveTimeout = const Duration(seconds: 120);
@@ -37,7 +37,9 @@ class ApiClient {
     _dio.interceptors.add(CookieManager(this.cookieJar));
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final isAuthRequest = options.path.contains('/api/auth/login') || options.path.contains('/api/auth/signup');
+        final isAuthRequest = options.path.contains('/api/auth/login') ||
+            options.path.contains('/api/auth/signup') ||
+            options.path.contains('/api/auth/social-login');
         if (_authToken == null) {
           final prefs = await SharedPreferences.getInstance();
           _authToken = prefs.getString('auth_token');
@@ -68,22 +70,22 @@ class ApiClient {
     _initDeviceId();
     _loadAuthToken();
   }
-  
+
   Future<void> _loadAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     _authToken = prefs.getString('auth_token');
   }
-  
+
   Future<void> _initDeviceId() async {
     if (_cachedDeviceId != null) {
       _deviceId = _cachedDeviceId;
       return;
     }
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       _deviceId = prefs.getString('device_id');
-      
+
       if (_deviceId == null) {
         final deviceInfo = DeviceInfoPlugin();
         if (Platform.isAndroid) {
@@ -101,7 +103,7 @@ class ApiClient {
       _deviceId = 'unknown';
     }
   }
-  
+
   Future<String> getDeviceId() async {
     if (_deviceId == null) {
       await _initDeviceId();
@@ -170,7 +172,8 @@ class ApiClient {
         queryParams['search'] = searchQuery;
       }
 
-      final response = await _dio.get('/api/products', queryParameters: queryParams);
+      final response =
+          await _dio.get('/api/products', queryParameters: queryParams);
       if (response.data is List) {
         return (response.data as List)
             .map((e) => Product.fromJson(e as Map<String, dynamic>))
@@ -234,7 +237,7 @@ class ApiClient {
         'deviceId': deviceId,
         'device_id': deviceId,
       });
-      
+
       if (response.data['success'] == true) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('is_logged_in', true);
@@ -242,7 +245,7 @@ class ApiClient {
           await prefs.setInt('customer_id', response.data['customer']['id']);
         }
       }
-      
+
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {
@@ -266,19 +269,58 @@ class ApiClient {
         'deviceId': deviceId,
         'device_id': deviceId,
       });
-      
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_logged_in', true);
       if (response.data['customer'] != null) {
         await prefs.setInt('customer_id', response.data['customer']['id']);
       }
-      
+
       return User.fromJson(response.data['customer'] as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {
         throw Exception(e.response!.data['error'] ?? 'فشل تسجيل الدخول');
       }
       throw Exception('فشل تسجيل الدخول');
+    }
+  }
+
+  Future<User> socialLogin({
+    required String provider,
+    required String idToken,
+    String? name,
+  }) async {
+    try {
+      final deviceId = await getDeviceId();
+      final response = await _dio.post('/api/auth/social-login', data: {
+        'provider': provider,
+        'idToken': idToken,
+        'name': name ?? '',
+        'deviceId': deviceId,
+        'device_id': deviceId,
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', true);
+      if (response.data['customer'] != null) {
+        await prefs.setInt('customer_id', response.data['customer']['id']);
+      }
+
+      final customer = response.data['customer'];
+      if (customer is Map<String, dynamic>) {
+        return User.fromJson(customer);
+      }
+
+      final currentUser = await getCurrentUser();
+      if (currentUser != null) {
+        return currentUser;
+      }
+      throw Exception('حدث خطأ في تسجيل الدخول');
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response!.data is Map) {
+        throw Exception(e.response!.data['error'] ?? 'حدث خطأ في تسجيل الدخول');
+      }
+      throw Exception('حدث خطأ في تسجيل الدخول');
     }
   }
 
@@ -295,18 +337,18 @@ class ApiClient {
       await prefs.remove('auth_token');
     }
   }
-  
+
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('is_logged_in') ?? false;
   }
-  
+
   Future<bool> tryAutoLogin() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
       if (!isLoggedIn) return false;
-      
+
       final user = await getCurrentUser();
       if (user == null) {
         await prefs.setBool('is_logged_in', false);
@@ -352,7 +394,8 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> validateCoupon(String code, double orderTotal) async {
+  Future<Map<String, dynamic>> validateCoupon(
+      String code, double orderTotal) async {
     try {
       final response = await _dio.post('/api/coupons/validate', data: {
         'code': code,
@@ -483,7 +526,8 @@ class ApiClient {
 
   AIResponse _getMockAIResponse(String query) {
     return AIResponse(
-      answer: 'مرحباً! أنا مساعدك الذكي للعناية بالبشرة. كيف يمكنني مساعدتك اليوم؟',
+      answer:
+          'مرحباً! أنا مساعدك الذكي للعناية بالبشرة. كيف يمكنني مساعدتك اليوم؟',
       recommendations: [],
     );
   }
@@ -508,7 +552,8 @@ class ApiClient {
   static ApiClient? _instance;
 
   static ApiClient get instance {
-    _instance ??= ApiClient(baseUrl: 'https://shine-flutter-doc--nabltmnmr.replit.app');
+    _instance ??=
+        ApiClient(baseUrl: 'https://shine-flutter-doc--nabltmnmr.replit.app');
     return _instance!;
   }
 
@@ -517,7 +562,8 @@ class ApiClient {
   }
 
   static String getBaseUrl() {
-    return _instance?.baseUrl ?? 'https://shine-flutter-doc--nabltmnmr.replit.app';
+    return _instance?.baseUrl ??
+        'https://shine-flutter-doc--nabltmnmr.replit.app';
   }
 
   Future<Map<String, dynamic>> getScanCredits() async {
@@ -557,7 +603,7 @@ class ApiClient {
   }) async {
     try {
       FormData formData;
-      
+
       if (imageFile != null) {
         formData = FormData.fromMap({
           'area_type': areaType,
@@ -572,7 +618,7 @@ class ApiClient {
           if (imageBase64 != null) 'image_base64': imageBase64,
         });
       }
-      
+
       final response = await _dio.post(
         '/api/skin-scan/analyze',
         data: formData,
@@ -664,7 +710,8 @@ class ApiClient {
           filename: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
         ),
       });
-      final response = await _dio.post('/api/auth/profile-picture', data: formData);
+      final response =
+          await _dio.post('/api/auth/profile-picture', data: formData);
       return response.data['profilePictureUrl'] as String? ?? '';
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {

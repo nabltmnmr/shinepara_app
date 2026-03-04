@@ -52,7 +52,8 @@ class AppLocaleNotifier extends StateNotifier<Locale> {
   }
 }
 
-final appLocaleProvider = StateNotifierProvider<AppLocaleNotifier, Locale>((ref) {
+final appLocaleProvider =
+    StateNotifierProvider<AppLocaleNotifier, Locale>((ref) {
   return AppLocaleNotifier();
 });
 
@@ -76,7 +77,8 @@ final bestSellersProvider = FutureProvider<List<Product>>((ref) async {
   return apiClient.getBestSellers();
 });
 
-final productsProvider = FutureProvider.family<List<Product>, ProductFilter>((ref, filter) async {
+final productsProvider =
+    FutureProvider.family<List<Product>, ProductFilter>((ref, filter) async {
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getProducts(
     categoryId: filter.categoryId,
@@ -85,7 +87,8 @@ final productsProvider = FutureProvider.family<List<Product>, ProductFilter>((re
   );
 });
 
-final productDetailProvider = FutureProvider.family<Product?, int>((ref, id) async {
+final productDetailProvider =
+    FutureProvider.family<Product?, int>((ref, id) async {
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getProductById(id);
 });
@@ -112,18 +115,21 @@ class ProductFilter {
           searchQuery == other.searchQuery;
 
   @override
-  int get hashCode => categoryId.hashCode ^ brandId.hashCode ^ searchQuery.hashCode;
+  int get hashCode =>
+      categoryId.hashCode ^ brandId.hashCode ^ searchQuery.hashCode;
 }
 
 class CartNotifier extends StateNotifier<List<CartItem>> {
   CartNotifier() : super([]);
 
   void addToCart(Product product) {
-    final existingIndex = state.indexWhere((item) => item.productId == product.id);
+    final existingIndex =
+        state.indexWhere((item) => item.productId == product.id);
     if (existingIndex >= 0) {
       state = [
         ...state.sublist(0, existingIndex),
-        state[existingIndex].copyWith(quantity: state[existingIndex].quantity + 1),
+        state[existingIndex]
+            .copyWith(quantity: state[existingIndex].quantity + 1),
         ...state.sublist(existingIndex + 1),
       ];
     } else {
@@ -153,7 +159,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
   }
 
   double get totalPrice => state.fold(0, (sum, item) => sum + item.totalPrice);
-  
+
   int get itemCount => state.fold(0, (sum, item) => sum + item.quantity);
 }
 
@@ -175,14 +181,15 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
   bool isInWishlist(int productId) => state.contains(productId);
 }
 
-final wishlistProvider = StateNotifierProvider<WishlistNotifier, Set<int>>((ref) {
+final wishlistProvider =
+    StateNotifierProvider<WishlistNotifier, Set<int>>((ref) {
   return WishlistNotifier();
 });
 
 final wishlistProductsProvider = FutureProvider<List<Product>>((ref) async {
   final wishlistIds = ref.watch(wishlistProvider);
   if (wishlistIds.isEmpty) return [];
-  
+
   final apiClient = ref.watch(apiClientProvider);
   final allProducts = await apiClient.getProducts();
   return allProducts.where((p) => wishlistIds.contains(p.id)).toList();
@@ -209,7 +216,7 @@ class AuthNotifier extends StateNotifier<User?> {
       _initialized = true;
     }
   }
-  
+
   Future<bool> tryAutoLogin() async {
     if (_initialized) return state != null;
     isLoading = true;
@@ -258,6 +265,24 @@ class AuthNotifier extends StateNotifier<User?> {
         location: location,
       );
       final user = await apiClient.login(email: email, password: password);
+      state = user;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  Future<void> socialLogin({
+    required String provider,
+    required String idToken,
+    String? name,
+  }) async {
+    isLoading = true;
+    try {
+      final user = await apiClient.socialLogin(
+        provider: provider,
+        idToken: idToken,
+        name: name,
+      );
       state = user;
     } finally {
       isLoading = false;
@@ -337,7 +362,8 @@ final orderDetailProvider = FutureProvider.family<Order?, int>((ref, id) async {
   return apiClient.getOrderById(id);
 });
 
-final notificationsProvider = FutureProvider<List<AppNotification>>((ref) async {
+final notificationsProvider =
+    FutureProvider<List<AppNotification>>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getNotifications();
 });
@@ -361,9 +387,9 @@ class AIChatNotifier extends StateNotifier<List<ChatMessage>> {
       timestamp: DateTime.now(),
     );
     state = [...state, userMessage];
-    
+
     isLoading = true;
-    
+
     try {
       final history = state
           .where((m) => m.content.isNotEmpty)
@@ -375,12 +401,12 @@ class AIChatNotifier extends StateNotifier<List<ChatMessage>> {
       if (history.isNotEmpty) {
         history.removeLast();
       }
-      
+
       final response = await apiClient.getAIRecommendation(
         query: content,
         conversationHistory: history,
       );
-      
+
       final aiMessage = ChatMessage(
         id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
         content: response.answer,
@@ -407,7 +433,8 @@ class AIChatNotifier extends StateNotifier<List<ChatMessage>> {
   }
 }
 
-final aiChatProvider = StateNotifierProvider<AIChatNotifier, List<ChatMessage>>((ref) {
+final aiChatProvider =
+    StateNotifierProvider<AIChatNotifier, List<ChatMessage>>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return AIChatNotifier(apiClient);
 });
@@ -443,7 +470,8 @@ class ScanCreditsNotifier extends StateNotifier<AsyncValue<ScanCredits>> {
   }
 }
 
-final scanCreditsProvider = StateNotifierProvider<ScanCreditsNotifier, AsyncValue<ScanCredits>>((ref) {
+final scanCreditsProvider =
+    StateNotifierProvider<ScanCreditsNotifier, AsyncValue<ScanCredits>>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return ScanCreditsNotifier(apiClient);
 });
@@ -497,7 +525,8 @@ class SkinScanService {
     required int scanId1,
     required int scanId2,
   }) async {
-    final data = await apiClient.compareScans(scanId1: scanId1, scanId2: scanId2);
+    final data =
+        await apiClient.compareScans(scanId1: scanId1, scanId2: scanId2);
     return ScanComparison.fromJson(data);
   }
 }
@@ -511,7 +540,8 @@ final skinScanServiceProvider = Provider<SkinScanService>((ref) {
 // Product reviews (local)
 // -----------------------------
 
-class ProductReviewsNotifier extends StateNotifier<AsyncValue<List<ProductReview>>> {
+class ProductReviewsNotifier
+    extends StateNotifier<AsyncValue<List<ProductReview>>> {
   ProductReviewsNotifier(this._productId) : super(const AsyncValue.loading()) {
     _load();
   }
@@ -574,8 +604,11 @@ class ProductReviewsNotifier extends StateNotifier<AsyncValue<List<ProductReview
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_prefsKey);
-      final decoded = raw == null || raw.trim().isEmpty ? <String, dynamic>{} : jsonDecode(raw);
-      final map = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+      final decoded = raw == null || raw.trim().isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(raw);
+      final map =
+          decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
 
       map[_productId.toString()] = next.map((r) => r.toJson()).toList();
       await prefs.setString(_prefsKey, jsonEncode(map));
@@ -619,11 +652,18 @@ class SavedRoutine {
   factory SavedRoutine.fromJson(Map<String, dynamic> json) {
     return SavedRoutine(
       id: json['id'] is String ? int.parse(json['id']) : json['id'] as int,
-      customerId: json['customer_id'] is String ? int.parse(json['customer_id']) : json['customer_id'] as int,
-      scanId: json['scan_id'] != null ? (json['scan_id'] is String ? int.tryParse(json['scan_id']) : json['scan_id'] as int?) : null,
+      customerId: json['customer_id'] is String
+          ? int.parse(json['customer_id'])
+          : json['customer_id'] as int,
+      scanId: json['scan_id'] != null
+          ? (json['scan_id'] is String
+              ? int.tryParse(json['scan_id'])
+              : json['scan_id'] as int?)
+          : null,
       title: json['title'] as String? ?? 'روتين مخصص',
       routineText: json['routine_text'] as String? ?? '',
-      createdAt: DateTime.tryParse((json['created_at'] ?? '').toString()) ?? DateTime.now(),
+      createdAt: DateTime.tryParse((json['created_at'] ?? '').toString()) ??
+          DateTime.now(),
     );
   }
 }

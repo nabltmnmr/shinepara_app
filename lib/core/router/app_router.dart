@@ -38,10 +38,12 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final categoryId = state.uri.queryParameters['categoryId'];
         final brandIdStr = state.uri.queryParameters['brandId'];
+        final searchQuery = state.uri.queryParameters['searchQuery'];
         final brandId = brandIdStr != null ? int.tryParse(brandIdStr) : null;
         return ProductListScreen(
           categoryId: categoryId,
           brandId: brandId,
+          searchQuery: searchQuery,
         );
       },
     ),

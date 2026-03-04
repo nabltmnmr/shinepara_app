@@ -28,7 +28,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   String _query = '';
 
   final List<String> _recent = [];
-  static const List<String> _fallbackBrands = ['Olay', 'Estée', 'Lume', 'Chanel', 'Dior', 'Clinique'];
+  static const List<String> _fallbackBrands = [
+    'Olay',
+    'Estée',
+    'Lume',
+    'Chanel',
+    'Dior',
+    'Clinique'
+  ];
 
   @override
   void initState() {
@@ -49,7 +56,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   void _applyQuery(String q) {
     _controller.text = q;
-    _controller.selection = TextSelection.fromPosition(TextPosition(offset: q.length));
+    _controller.selection =
+        TextSelection.fromPosition(TextPosition(offset: q.length));
     setState(() => _query = q);
   }
 
@@ -60,6 +68,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       setState(() => _recent.insert(0, q));
     }
     FocusScope.of(context).unfocus();
+    context.push('/products?searchQuery=${Uri.encodeQueryComponent(q)}');
   }
 
   @override
@@ -73,213 +82,227 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
 
     return Scaffold(
-        backgroundColor: AppColors.background,
-        body: Stack(
-          children: [
-            // Subtle warm top gradient.
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.appBarBackground.withOpacity(0.70),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.55],
-                  ),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          // Subtle warm top gradient.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.appBarBackground.withOpacity(0.70),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.55],
                 ),
               ),
             ),
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _TopSearchRow(
-                      controller: _controller,
-                      onTapBack: () => context.safeGoBack(),
-                      onTapArrow: _submit,
-                      onSubmitted: (_) => _submit(),
-                    ),
-                    const SizedBox(height: 22),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _TopSearchRow(
+                    controller: _controller,
+                    onTapBack: () => context.safeGoBack(),
+                    onTapArrow: _submit,
+                    onSubmitted: (_) => _submit(),
+                  ),
+                  const SizedBox(height: 22),
 
-                    // Recent searches
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          context.tr('search_recent_searches'),
-                          style: AppTextStyles.titleMedium.copyWith(
-                            color: AppColors.textOffWhite,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => setState(() => _recent.clear()),
-                          child: Text(
-                            context.tr('search_clear_all'),
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        for (final r in _recent)
-                          _PillChip(
-                            text: r,
-                            icon: Icons.history,
-                            onTap: () {
-                              _applyQuery(r);
-                              _submit();
-                            },
-                          ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 28),
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: Text(
-                        context.tr('search_top_brands'),
+                  // Recent searches
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        context.tr('search_recent_searches'),
                         style: AppTextStyles.titleMedium.copyWith(
                           color: AppColors.textOffWhite,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
+                      TextButton(
+                        onPressed: () => setState(() => _recent.clear()),
+                        child: Text(
+                          context.tr('search_clear_all'),
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (final r in _recent)
+                        _PillChip(
+                          text: r,
+                          icon: Icons.history,
+                          onTap: () {
+                            _applyQuery(r);
+                            _submit();
+                          },
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 28),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      context.tr('search_top_brands'),
+                      style: AppTextStyles.titleMedium.copyWith(
+                        color: AppColors.textOffWhite,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    Center(
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 12,
-                        runSpacing: 12,
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final b in topBrands)
+                          _PillChip(
+                            text: b,
+                            icon: null,
+                            onTap: () {
+                              _applyQuery(b);
+                              _submit();
+                            },
+                            buttonLike: true,
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 34),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      context.tr('search_recommended_for_you'),
+                      style: AppTextStyles.sectionTitle.copyWith(
+                        color: AppColors.textOffWhite,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  productsAsync.when(
+                    data: (list) {
+                      final base = list.isNotEmpty ? list : _fallbackProducts();
+                      final q = _query.trim().toLowerCase();
+                      final filtered = q.isEmpty
+                          ? base
+                          : base
+                              .where((p) =>
+                                  p.nameEn.toLowerCase().contains(q) ||
+                                  p.nameAr.toLowerCase().contains(q) ||
+                                  (p.categoryName ?? '')
+                                      .toLowerCase()
+                                      .contains(q) ||
+                                  (p.brandName ?? '').toLowerCase().contains(q))
+                              .toList();
+
+                      return Column(
                         children: [
-                          for (final b in topBrands)
-                            _PillChip(
-                              text: b,
-                              icon: null,
-                              onTap: () {
-                                _applyQuery(b);
-                                _submit();
-                              },
-                              buttonLike: true,
+                          for (final p in filtered)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: _RecommendedCard(
+                                product: p,
+                                onTap: () => context.push('/product/${p.id}'),
+                                onTapAdd: () {
+                                  ref.read(cartProvider.notifier).addToCart(p);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: AppColors
+                                          .bottomNavBackground
+                                          .withOpacity(0.92),
+                                      behavior: SnackBarBehavior.floating,
+                                      elevation: 0,
+                                      margin: const EdgeInsets.fromLTRB(
+                                          16, 0, 16, 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: BorderSide(
+                                            color: AppColors.white
+                                                .withOpacity(0.08)),
+                                      ),
+                                      content: Row(
+                                        children: [
+                                          TextButton(
+                                            onPressed: () {
+                                              ScaffoldMessenger.of(context)
+                                                  .hideCurrentSnackBar();
+                                              context.push('/cart');
+                                            },
+                                            style: TextButton.styleFrom(
+                                              foregroundColor:
+                                                  AppColors.primary,
+                                              textStyle: AppTextStyles
+                                                  .labelLarge
+                                                  .copyWith(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            child:
+                                                Text(context.tr('cart_view')),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              context.tr('cart_added_to_bag'),
+                                              textAlign: TextAlign.right,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppTextStyles.bodyMedium
+                                                  .copyWith(
+                                                color: AppColors.textOffWhite,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                         ],
+                      );
+                    },
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child:
+                            CircularProgressIndicator(color: AppColors.primary),
                       ),
                     ),
-
-                    const SizedBox(height: 34),
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: Text(
-                        context.tr('search_recommended_for_you'),
-                        style: AppTextStyles.sectionTitle.copyWith(
-                          color: AppColors.textOffWhite,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 22,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    productsAsync.when(
-                      data: (list) {
-                        final base = list.isNotEmpty ? list : _fallbackProducts();
-                        final q = _query.trim().toLowerCase();
-                        final filtered = q.isEmpty
-                            ? base
-                            : base
-                                .where((p) =>
-                                    p.nameEn.toLowerCase().contains(q) ||
-                                    p.nameAr.toLowerCase().contains(q) ||
-                                    (p.categoryName ?? '').toLowerCase().contains(q) ||
-                                    (p.brandName ?? '').toLowerCase().contains(q))
-                                .toList();
-
-                        return Column(
-                          children: [
-                            for (final p in filtered)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: _RecommendedCard(
-                                  product: p,
-                                  onTap: () => context.push('/product/${p.id}'),
-                                  onTapAdd: () {
-                                    ref.read(cartProvider.notifier).addToCart(p);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        backgroundColor: AppColors.bottomNavBackground.withOpacity(0.92),
-                                        behavior: SnackBarBehavior.floating,
-                                        elevation: 0,
-                                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                          side: BorderSide(color: AppColors.white.withOpacity(0.08)),
-                                        ),
-                                        content: Row(
-                                          children: [
-                                            TextButton(
-                                              onPressed: () {
-                                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                                context.push('/cart');
-                                              },
-                                              style: TextButton.styleFrom(
-                                                foregroundColor: AppColors.primary,
-                                                textStyle: AppTextStyles.labelLarge.copyWith(
-                                                  fontWeight: FontWeight.w900,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              child: Text(context.tr('cart_view')),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                context.tr('cart_added_to_bag'),
-                                                textAlign: TextAlign.right,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: AppTextStyles.bodyMedium.copyWith(
-                                                  color: AppColors.textOffWhite,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                      loading: () => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: Center(
-                          child: CircularProgressIndicator(color: AppColors.primary),
-                        ),
-                      ),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-                  ],
-                ),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 
   List<Product> _fallbackProducts() {
@@ -364,7 +387,8 @@ class _TopSearchRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.bottomNavBackground.withOpacity(0.35),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: AppColors.primary.withOpacity(0.55), width: 1.6),
+              border: Border.all(
+                  color: AppColors.primary.withOpacity(0.55), width: 1.6),
             ),
             child: TextField(
               controller: controller,
@@ -376,12 +400,15 @@ class _TopSearchRow extends StatelessWidget {
               cursorColor: AppColors.textOffWhite,
               decoration: InputDecoration(
                 hintText: context.tr('search_hint'),
-                hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.iconTint),
+                hintStyle: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.iconTint),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                 suffixIcon: IconButton(
                   onPressed: onTapArrow,
-                  icon: const Icon(Icons.search, color: AppColors.primary, size: 24),
+                  icon: const Icon(Icons.search,
+                      color: AppColors.primary, size: 24),
                 ),
               ),
             ),
@@ -439,9 +466,11 @@ class _PillChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: buttonLike ? 18 : 14, vertical: 10),
+        padding: EdgeInsets.symmetric(
+            horizontal: buttonLike ? 18 : 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.bottomNavBackground.withOpacity(buttonLike ? 0.42 : 0.32),
+          color: AppColors.bottomNavBackground
+              .withOpacity(buttonLike ? 0.42 : 0.32),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: AppColors.white.withOpacity(0.08)),
         ),
@@ -486,10 +515,13 @@ class _RecommendedCard extends ConsumerWidget {
         .map((i) => i.quantity)
         .fold<int>(0, (prev, q) => q > prev ? q : prev);
 
-    final title = product.nameEn.trim().isNotEmpty ? product.nameEn.trim() : product.nameAr.trim();
-    final subtitle = (product.categoryName ?? product.brandName ?? '').trim().isNotEmpty
-        ? (product.categoryName ?? product.brandName ?? '').trim()
-        : 'Brightening Vitamin C Complex';
+    final title = product.nameEn.trim().isNotEmpty
+        ? product.nameEn.trim()
+        : product.nameAr.trim();
+    final subtitle =
+        (product.categoryName ?? product.brandName ?? '').trim().isNotEmpty
+            ? (product.categoryName ?? product.brandName ?? '').trim()
+            : 'Brightening Vitamin C Complex';
 
     return GestureDetector(
       onTap: onTap,
@@ -514,7 +546,8 @@ class _RecommendedCard extends ConsumerWidget {
             else
               _MiniQtyStepper(
                 quantity: qtyInCart,
-                onDecrement: () => cartNotifier.updateQuantity(product.id, qtyInCart - 1),
+                onDecrement: () =>
+                    cartNotifier.updateQuantity(product.id, qtyInCart - 1),
                 onIncrement: onTapAdd,
               ),
             const SizedBox(width: 14),
@@ -536,7 +569,8 @@ class _RecommendedCard extends ConsumerWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.iconTint, fontSize: 13),
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.iconTint, fontSize: 13),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -664,8 +698,10 @@ class _ProductThumb extends StatelessWidget {
             : CachedNetworkImage(
                 imageUrl: imageUrl,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: AppColors.brandCircleBackground),
-                errorWidget: (_, __, ___) => Container(color: AppColors.brandCircleBackground),
+                placeholder: (_, __) =>
+                    Container(color: AppColors.brandCircleBackground),
+                errorWidget: (_, __, ___) =>
+                    Container(color: AppColors.brandCircleBackground),
               ),
       ),
     );
