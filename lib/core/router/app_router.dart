@@ -10,6 +10,7 @@ import '../../features/account/account_screen.dart';
 import '../../features/catalog/categories_screen.dart';
 import '../../features/catalog/brands_screen.dart';
 import '../../features/auth/login_screen.dart';
+import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/signup_screen.dart';
 import '../../features/orders/orders_screen.dart';
 import '../../features/orders/order_detail_screen.dart';
@@ -89,6 +90,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
     ),
     GoRoute(
       path: '/signup',

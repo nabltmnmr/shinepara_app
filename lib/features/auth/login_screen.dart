@@ -248,6 +248,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             : null,
                         onPressed: _isLoading ? null : _login,
                       ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => context.push('/forgot-password'),
+                          child: Text(
+                            context.tr('forgot_password'),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.iconTint,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       const SizedBox(height: 18),
                       Row(
                         children: [

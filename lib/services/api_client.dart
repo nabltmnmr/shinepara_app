@@ -285,6 +285,40 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    try {
+      final response = await _dio.post('/api/auth/forgot-password', data: {
+        'email': email,
+      });
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response?.data['error'] != null) {
+        throw Exception(e.response!.data['error']);
+      }
+      throw Exception('حدث خطأ في الاتصال');
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post('/api/auth/reset-password', data: {
+        'email': email,
+        'code': code,
+        'newPassword': newPassword,
+      });
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response?.data['error'] != null) {
+        throw Exception(e.response!.data['error']);
+      }
+      throw Exception('حدث خطأ في الاتصال');
+    }
+  }
+
   Future<User> socialLogin({
     required String provider,
     required String idToken,
