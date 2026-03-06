@@ -5,6 +5,10 @@ plugins {
     id "com.google.gms.google-services"
 }
 
+configurations.all {
+    exclude group: "com.google.android.play", module: "core-common"
+}
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
