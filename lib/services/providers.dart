@@ -18,7 +18,7 @@ import '../models/skin_scan.dart';
 import '../models/product_review.dart';
 import 'api_client.dart';
 
-const String apiBaseUrl = 'https://shine-flutter-doc--nabltmnmr.replit.app';
+const String apiBaseUrl = 'https://shine-care.com';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient(baseUrl: apiBaseUrl);
