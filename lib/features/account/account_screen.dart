@@ -11,7 +11,6 @@ import '../../core/theme/text_styles.dart';
 import '../../core/localization/shine_strings.dart';
 import '../../services/providers.dart';
 import '../../services/api_client.dart';
-import '../../models/skin_scan.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -298,6 +297,19 @@ class AccountScreen extends ConsumerWidget {
                         icon: Icons.favorite_rounded,
                         leadingCount: wishlistCount,
                         onTap: () => context.push('/wishlist'),
+                      ),
+                      const SizedBox(height: 12),
+                      _MenuRow(
+                        title: context.tr('privacy_ai'),
+                        icon: Icons.privacy_tip_outlined,
+                        onTap: () => context.push('/settings/privacy-ai'),
+                      ),
+                      const SizedBox(height: 12),
+                      _MenuRow(
+                        title: context.tr('account'),
+                        icon: Icons.manage_accounts_outlined,
+                        onTap: () =>
+                            user == null ? context.push('/login') : context.push('/settings/account'),
                       ),
                     ],
                   ),

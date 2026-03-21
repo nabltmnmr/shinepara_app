@@ -97,6 +97,16 @@ class ShineStrings {
       'back_to_login': 'Back to Login',
       'resend_code': 'Resend Code',
       'code_expires_in': 'Code expires in 15 minutes',
+      'privacy_ai': 'Privacy & AI',
+      'ai_consent_status': 'AI consent status',
+      'granted': 'Granted',
+      'not_granted': 'Not granted',
+      'withdraw_ai_consent': 'Withdraw AI consent',
+      'account': 'Account',
+      'delete_account': 'Delete Account',
+      'delete_account_title': 'Delete Account',
+      'delete_account_body': 'Deleting your account will permanently remove your profile and associated data from Shine, including saved preferences, uploaded analysis data, and account history, except where retention is required by law.\n\nThis action cannot be undone.',
+      'delete_my_account': 'Delete My Account',
 
       // Hero banner
       'hero_badge': 'NEW COLLECTION',
@@ -252,6 +262,16 @@ class ShineStrings {
       'back_to_login': 'العودة لتسجيل الدخول',
       'resend_code': 'إعادة إرسال الرمز',
       'code_expires_in': 'صلاحية الرمز 15 دقيقة',
+      'privacy_ai': 'الخصوصية والذكاء الاصطناعي',
+      'ai_consent_status': 'حالة موافقة الذكاء الاصطناعي',
+      'granted': 'ممنوحة',
+      'not_granted': 'غير ممنوحة',
+      'withdraw_ai_consent': 'سحب موافقة الذكاء الاصطناعي',
+      'account': 'الحساب',
+      'delete_account': 'حذف الحساب',
+      'delete_account_title': 'حذف الحساب',
+      'delete_account_body': 'حذف حسابك سيؤدي إلى إزالة ملفك الشخصي والبيانات المرتبطة به بشكل دائم من Shine، بما في ذلك التفضيلات المحفوظة وبيانات التحليل المرفوعة وسجل الحساب، باستثناء ما يلزم الاحتفاظ به قانونياً.\n\nلا يمكن التراجع عن هذا الإجراء.',
+      'delete_my_account': 'احذف حسابي',
 
       // Hero banner
       'hero_badge': 'مجموعة جديدة',

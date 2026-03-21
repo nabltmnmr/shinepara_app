@@ -12,6 +12,7 @@ import '../../core/localization/shine_strings.dart';
 import '../../models/ai_recommendation.dart';
 import '../../models/product.dart';
 import '../../services/providers.dart';
+import '../ai/services/ai_consent_service.dart';
 
 class AIAssistantScreen extends ConsumerStatefulWidget {
   const AIAssistantScreen({super.key});
@@ -62,6 +63,15 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
 
   Future<void> _sendMessage(String message) async {
     if (message.trim().isEmpty) return;
+
+    final allowed = await AiConsentService.ensureAiConsent(context);
+    if (!allowed) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('AI action cancelled: consent not granted.')),
+      );
+      return;
+    }
 
     _textController.clear();
     setState(() => _isLoading = true);

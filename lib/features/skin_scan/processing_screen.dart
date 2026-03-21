@@ -7,6 +7,7 @@ import '../../core/theme/text_styles.dart';
 import '../../core/widgets/shine_scaffold.dart';
 import '../../core/widgets/shine_primary_button.dart';
 import '../../services/providers.dart';
+import '../ai/services/ai_consent_service.dart';
 
 class ProcessingScreen extends ConsumerStatefulWidget {
   final File imageFile;
@@ -39,6 +40,14 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen> {
 
   Future<void> _startProcessing() async {
     try {
+      final allowed = await AiConsentService.ensureAiConsent(context);
+      if (!allowed) {
+        if (mounted) {
+          context.pop();
+        }
+        return;
+      }
+
       for (int i = 0; i < _steps.length - 1; i++) {
         if (!mounted) return;
         setState(() {

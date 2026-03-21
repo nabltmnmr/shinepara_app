@@ -17,6 +17,9 @@ import '../../features/orders/order_detail_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/legal/privacy_policy_screen.dart';
 import '../../features/legal/terms_screen.dart';
+import '../../features/settings/privacy_ai_screen.dart';
+import '../../features/settings/account_settings_screen.dart';
+import '../../features/settings/delete_account_screen.dart';
 import 'dart:io';
 import '../../features/skin_scan/skin_scan_home.dart';
 import '../../features/skin_scan/new_scan_screen.dart';
@@ -121,6 +124,18 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/terms',
       builder: (context, state) => const TermsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/privacy-ai',
+      builder: (context, state) => const PrivacyAiScreen(),
+    ),
+    GoRoute(
+      path: '/settings/account',
+      builder: (context, state) => const AccountSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/account/delete',
+      builder: (context, state) => const DeleteAccountScreen(),
     ),
     GoRoute(
       path: '/skin-scan',

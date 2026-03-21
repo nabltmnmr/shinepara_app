@@ -13,6 +13,7 @@ import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/utils/image_orientation.dart';
 import '../../services/providers.dart';
+import '../ai/services/ai_consent_service.dart';
 
 enum CaptureStatus {
   noFace,
@@ -600,6 +601,7 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
         final normalized = await ImageOrientation.bakeExifOrientationIfNeeded(
           File(image.path),
         );
+        if (!mounted) return;
         context.push('/skin-scan/processing', extra: normalized);
       }
     } catch (e) {
@@ -677,10 +679,20 @@ mixin _SmartCaptureLogic<T extends ConsumerStatefulWidget>
 
 class _SmartCaptureScreenState extends ConsumerState<SmartCaptureScreen>
     with TickerProviderStateMixin, _SmartCaptureLogic<SmartCaptureScreen> {
+  Future<void> _checkConsent() async {
+    final allowed = await AiConsentService.ensureAiConsent(context);
+    if (!allowed && mounted) {
+      context.pop();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     initSmartCapture(startCamera: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkConsent();
+    });
   }
 
   @override

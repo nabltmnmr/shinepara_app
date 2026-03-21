@@ -7,6 +7,7 @@ import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/utils/image_orientation.dart';
 import '../../services/providers.dart';
+import '../ai/services/ai_consent_service.dart';
 
 class NewScanScreen extends ConsumerStatefulWidget {
   const NewScanScreen({super.key});
@@ -129,7 +130,7 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           title: 'التقاط صورة جديدة',
           subtitle: 'استخدم الكاميرا الأمامية مع توجيه ذكي',
           color: AppColors.primary,
-          onTap: () {
+          onTap: () async {
             if (!hasCredits) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -141,6 +142,8 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
                 ),
               );
             }
+            final allowed = await AiConsentService.ensureAiConsent(context);
+            if (!allowed || !mounted) return;
             context.push('/skin-scan/capture');
           },
         ),
@@ -150,7 +153,7 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           title: 'اختيار من المعرض',
           subtitle: 'اختر صورة موجودة من معرض الصور',
           color: AppColors.accent,
-          onTap: () {
+          onTap: () async {
             if (!hasCredits) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -163,6 +166,8 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
               );
               return;
             }
+            final allowed = await AiConsentService.ensureAiConsent(context);
+            if (!allowed || !mounted) return;
             _pickImage(ImageSource.gallery);
           },
         ),
@@ -236,6 +241,7 @@ class _NewScanScreenState extends ConsumerState<NewScanScreen> {
           final normalized = await ImageOrientation.bakeExifOrientationIfNeeded(
             File(image.path),
           );
+          if (!mounted) return;
           context.push('/skin-scan/processing', extra: normalized);
         }
       }

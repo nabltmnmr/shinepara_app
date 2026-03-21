@@ -10,6 +10,7 @@ import '../../core/widgets/shine_primary_button.dart';
 import '../../models/skin_scan.dart';
 import '../../services/providers.dart';
 import '../../services/api_client.dart';
+import '../ai/services/ai_consent_service.dart';
 
 class ScanResultsScreen extends ConsumerStatefulWidget {
   final int scanId;
@@ -777,6 +778,16 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
   }
 
   Future<void> _generateRoutine(int scanId) async {
+    final allowed = await AiConsentService.ensureAiConsent(context);
+    if (!allowed) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('AI action cancelled: consent not granted.')),
+        );
+      }
+      return;
+    }
+
     setState(() => _isGeneratingRoutine = true);
 
     try {

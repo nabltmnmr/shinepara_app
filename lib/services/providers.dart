@@ -179,6 +179,10 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
   }
 
   bool isInWishlist(int productId) => state.contains(productId);
+
+  void clearWishlist() {
+    state = {};
+  }
 }
 
 final wishlistProvider =

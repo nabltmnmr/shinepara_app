@@ -319,6 +319,44 @@ class ApiClient {
     }
   }
 
+  Future<void> deleteAccount({String? currentPassword}) async {
+    try {
+      await _dio.delete(
+        '/api/auth/delete-account',
+        data: {
+          if (currentPassword != null && currentPassword.trim().isNotEmpty)
+            'currentPassword': currentPassword.trim(),
+        },
+      );
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      final responseData = e.response?.data;
+      final serverError = responseData is Map ? responseData['error'] : null;
+
+      if (statusCode == 401) {
+        throw Exception('جلسة تسجيل الدخول منتهية. يرجى تسجيل الدخول مرة أخرى.');
+      }
+      if (statusCode == 403) {
+        throw Exception(
+          serverError?.toString() ?? 'يلزم تسجيل دخول حديث قبل حذف الحساب.',
+        );
+      }
+      if (statusCode == 408) {
+        throw Exception('انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.');
+      }
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw Exception('تعذر الاتصال بالشبكة. تحقق من الإنترنت ثم حاول مرة أخرى.');
+      }
+
+      throw Exception(serverError?.toString() ?? 'فشل حذف الحساب. يرجى المحاولة مرة أخرى.');
+    }
+  }
+
   Future<User> socialLogin({
     required String provider,
     required String idToken,
