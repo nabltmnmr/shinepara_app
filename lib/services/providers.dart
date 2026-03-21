@@ -154,6 +154,21 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
     }).toList();
   }
 
+  void incrementQuantity(int productId) {
+    state = state.map((item) {
+      if (item.productId == productId) {
+        return item.copyWith(quantity: item.quantity + 1);
+      }
+      return item;
+    }).toList();
+  }
+
+  void decrementQuantity(int productId) {
+    final idx = state.indexWhere((item) => item.productId == productId);
+    if (idx < 0) return;
+    updateQuantity(productId, state[idx].quantity - 1);
+  }
+
   void clearCart() {
     state = [];
   }

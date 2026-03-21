@@ -546,8 +546,7 @@ class _RecommendedCard extends ConsumerWidget {
             else
               _MiniQtyStepper(
                 quantity: qtyInCart,
-                onDecrement: () =>
-                    cartNotifier.updateQuantity(product.id, qtyInCart - 1),
+                onDecrement: () => cartNotifier.decrementQuantity(product.id),
                 onIncrement: onTapAdd,
               ),
             const SizedBox(width: 14),
@@ -642,6 +641,7 @@ class _MiniQtyStepper extends StatelessWidget {
         border: Border.all(color: AppColors.white.withOpacity(0.10)),
       ),
       child: Row(
+        textDirection: TextDirection.ltr,
         children: [
           _StepIconButton(icon: Icons.remove, onTap: onDecrement),
           Expanded(
@@ -670,13 +670,16 @@ class _StepIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Icon(icon, size: 20, color: AppColors.white),
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Icon(icon, size: 20, color: AppColors.white),
+        ),
       ),
     );
   }

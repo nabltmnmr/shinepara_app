@@ -116,8 +116,8 @@ class CartScreen extends ConsumerWidget {
                                 _CartItemCard(
                                   item: item,
                                   onRemove: () => cartNotifier.removeFromCart(item.productId),
-                                  onMinus: () => cartNotifier.updateQuantity(item.productId, item.quantity - 1),
-                                  onPlus: () => cartNotifier.updateQuantity(item.productId, item.quantity + 1),
+                                  onMinus: () => cartNotifier.decrementQuantity(item.productId),
+                                  onPlus: () => cartNotifier.incrementQuantity(item.productId),
                                 ),
                               const SizedBox(height: 10),
                               _PromoCodeRow(
@@ -140,6 +140,7 @@ class CartScreen extends ConsumerWidget {
                 left: 16,
                 child: _OverlayCircleIconButton(
                   icon: Icons.arrow_back,
+                  iconTextDirection: TextDirection.ltr,
                   onTap: () => context.safeGoBack(),
                 ),
               ),
@@ -158,10 +159,12 @@ class CartScreen extends ConsumerWidget {
 
 class _OverlayCircleIconButton extends StatelessWidget {
   final IconData icon;
+  final TextDirection? iconTextDirection;
   final VoidCallback onTap;
 
   const _OverlayCircleIconButton({
     required this.icon,
+    this.iconTextDirection,
     required this.onTap,
   });
 
@@ -180,7 +183,12 @@ class _OverlayCircleIconButton extends StatelessWidget {
               border: Border.all(color: AppColors.white.withOpacity(0.14), width: 1.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.white, size: 28),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 28,
+              textDirection: iconTextDirection,
+            ),
           ),
         ),
       ),
@@ -367,6 +375,7 @@ class _QtyStepper extends StatelessWidget {
         border: Border.all(color: AppColors.white.withOpacity(0.06)),
       ),
       child: Row(
+        textDirection: TextDirection.ltr,
         children: [
           _StepperIconButton(icon: Icons.remove, onTap: onMinus, color: AppColors.iconTint),
           Expanded(

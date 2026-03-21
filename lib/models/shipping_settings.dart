@@ -9,8 +9,14 @@ class ShippingSettings {
 
   factory ShippingSettings.fromJson(Map<String, dynamic> json) {
     return ShippingSettings(
-      shippingFee: _parseDouble(json['shipping_fee'] ?? json['shippingFee']),
-      freeShippingThreshold: _parseDouble(json['free_shipping_threshold'] ?? json['freeShippingThreshold']),
+      shippingFee: _parseDouble(
+        json['shipping_fee'] ?? json['shippingFee'] ?? json['base_fee'],
+      ),
+      freeShippingThreshold: _parseDouble(
+        json['free_shipping_threshold'] ??
+            json['freeShippingThreshold'] ??
+            json['free_threshold'],
+      ),
     );
   }
 

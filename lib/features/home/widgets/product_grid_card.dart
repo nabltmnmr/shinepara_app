@@ -55,10 +55,15 @@ class ProductGridCard extends ConsumerWidget {
               onTapAdd!.call();
               return;
             }
-            ref.read(cartProvider.notifier).addToCart(p);
+            final cart = ref.read(cartProvider.notifier);
+            if (qtyInCart <= 0) {
+              cart.addToCart(p);
+            } else {
+              cart.incrementQuantity(p.id);
+            }
           },
           onTapRemove: () {
-            ref.read(cartProvider.notifier).updateQuantity(p.id, (qtyInCart - 1));
+            ref.read(cartProvider.notifier).decrementQuantity(p.id);
           },
           onTapFavorite: () {
             if (onTapFavorite != null) {
@@ -99,7 +104,9 @@ class _ProductCard extends StatelessWidget {
     final title = product.nameEn.isNotEmpty ? product.nameEn : product.nameAr;
     final subtitle = (product.ingredients ?? '').trim().isNotEmpty
         ? (product.ingredients ?? '').trim().split(',').first.trim()
-        : ((product.brandName ?? '').isNotEmpty ? (product.brandName ?? '') : (product.categoryName ?? ''));
+        : ((product.brandName ?? '').isNotEmpty
+            ? (product.brandName ?? '')
+            : (product.categoryName ?? ''));
     final category = _categoryLabel(product);
 
     return GestureDetector(
@@ -143,7 +150,8 @@ class _ProductCard extends StatelessWidget {
                                 begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
                                 colors: [
-                                  AppColors.bottomNavBackground.withOpacity(0.55),
+                                  AppColors.bottomNavBackground
+                                      .withOpacity(0.55),
                                   Colors.transparent,
                                 ],
                                 stops: const [0.0, 0.45],
@@ -163,11 +171,16 @@ class _ProductCard extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.black.withOpacity(0.22),
-                                border: Border.all(color: AppColors.white.withOpacity(0.10)),
+                                border: Border.all(
+                                    color: AppColors.white.withOpacity(0.10)),
                               ),
                               child: Icon(
-                                isInWishlist ? Icons.favorite : Icons.favorite_border,
-                                color: isInWishlist ? AppColors.primary : AppColors.white.withOpacity(0.90),
+                                isInWishlist
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: isInWishlist
+                                    ? AppColors.primary
+                                    : AppColors.white.withOpacity(0.90),
                                 size: 18,
                               ),
                             ),
@@ -221,40 +234,66 @@ class _ProductCard extends StatelessWidget {
                               ),
                             ),
                             const Spacer(),
-                            Row(
-                              children: [
-                              if (qtyInCart <= 0)
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: onTapAdd,
-                                  child: Container(
-                                    height: 32,
-                                    width: 32,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.black.withOpacity(0.22),
-                                      border: Border.all(color: AppColors.white.withOpacity(0.08)),
+                            LayoutBuilder(
+                              builder: (context, rowConstraints) {
+                                final isTight = rowConstraints.maxWidth < 170;
+                                final addButtonSize = isTight ? 34.0 : 40.0;
+                                return Row(
+                                  children: [
+                                    if (qtyInCart <= 0)
+                                      GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: onTapAdd,
+                                        child: Container(
+                                          height: addButtonSize,
+                                          width: addButtonSize,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color:
+                                                Colors.black.withOpacity(0.22),
+                                            border: Border.all(
+                                                color: AppColors.white
+                                                    .withOpacity(0.08)),
+                                          ),
+                                          child: Icon(
+                                            Icons.add,
+                                            color: AppColors.white,
+                                            size: isTight ? 18 : 20,
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      _MiniQtyStepper(
+                                        compact: isTight,
+                                        quantity: qtyInCart,
+                                        onDecrement: onTapRemove,
+                                        onIncrement: onTapAdd,
+                                      ),
+                                    SizedBox(width: isTight ? 6 : 10),
+                                    Expanded(
+                                      child: Align(
+                                        alignment:
+                                            AlignmentDirectional.centerEnd,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            IqdCurrency.format(
+                                                product.displayPrice),
+                                            maxLines: 1,
+                                            style: AppTextStyles.titleLarge
+                                                .copyWith(
+                                              color: AppColors.white,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: isTight ? 15 : 17,
+                                              height: 1.0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    child: const Icon(Icons.add, color: AppColors.white, size: 17),
-                                  ),
-                                )
-                              else
-                                _MiniQtyStepper(
-                                  quantity: qtyInCart,
-                                  onDecrement: onTapRemove,
-                                  onIncrement: onTapAdd,
-                                ),
-                                const Spacer(),
-                                Text(
-                                  IqdCurrency.format(product.displayPrice),
-                                  style: AppTextStyles.titleLarge.copyWith(
-                                    color: AppColors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 17,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ],
+                                  ],
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -285,11 +324,13 @@ class _ProductCard extends StatelessWidget {
       fit: BoxFit.cover,
       placeholder: (_, __) => Container(
         color: AppColors.brandCircleBackground,
-        child: const Center(child: Icon(Icons.image, color: AppColors.textMuted)),
+        child:
+            const Center(child: Icon(Icons.image, color: AppColors.textMuted)),
       ),
       errorWidget: (_, __, ___) => Container(
         color: AppColors.brandCircleBackground,
-        child: const Center(child: Icon(Icons.image, color: AppColors.textMuted)),
+        child:
+            const Center(child: Icon(Icons.image, color: AppColors.textMuted)),
       ),
     );
   }
@@ -317,11 +358,13 @@ class _ProductCard extends StatelessWidget {
 }
 
 class _MiniQtyStepper extends StatelessWidget {
+  final bool compact;
   final int quantity;
   final VoidCallback? onDecrement;
   final VoidCallback? onIncrement;
 
   const _MiniQtyStepper({
+    this.compact = false,
     required this.quantity,
     required this.onDecrement,
     required this.onIncrement,
@@ -329,17 +372,21 @@ class _MiniQtyStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final height = compact ? 36.0 : 40.0;
+    final width = compact ? 92.0 : 116.0;
     return Container(
-      height: 32,
-      width: 92,
+      height: height,
+      width: width,
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.22),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.white.withOpacity(0.08)),
       ),
       child: Row(
+        textDirection: TextDirection.ltr,
         children: [
-          _StepIconButton(icon: Icons.remove, onTap: onDecrement),
+          _StepIconButton(
+              compact: compact, icon: Icons.remove, onTap: onDecrement),
           Expanded(
             child: Center(
               child: Text(
@@ -347,11 +394,13 @@ class _MiniQtyStepper extends StatelessWidget {
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.white,
                   fontWeight: FontWeight.w900,
+                  fontSize: compact ? 13 : null,
                 ),
               ),
             ),
           ),
-          _StepIconButton(icon: Icons.add, onTap: onIncrement),
+          _StepIconButton(
+              compact: compact, icon: Icons.add, onTap: onIncrement),
         ],
       ),
     );
@@ -359,26 +408,34 @@ class _MiniQtyStepper extends StatelessWidget {
 }
 
 class _StepIconButton extends StatelessWidget {
+  final bool compact;
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _StepIconButton({required this.icon, required this.onTap});
+  const _StepIconButton({
+    this.compact = false,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: 32,
-        height: 32,
-        child: Icon(
-          icon,
-          size: 16,
-          color: onTap == null ? AppColors.iconTint : AppColors.white,
+    final size = compact ? 32.0 : 40.0;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Icon(
+            icon,
+            size: compact ? 16 : 19,
+            color: onTap == null ? AppColors.iconTint : AppColors.white,
+          ),
         ),
       ),
     );
   }
 }
-
