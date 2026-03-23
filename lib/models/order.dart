@@ -1,4 +1,12 @@
-enum OrderStatus { pending, confirmed, preparing, shipped, delivered, cancelled, returned }
+enum OrderStatus {
+  pending,
+  confirmed,
+  preparing,
+  shipped,
+  delivered,
+  cancelled,
+  returned
+}
 
 class Order {
   final int id;
@@ -32,28 +40,104 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    final itemsRaw = _firstNonNull(
+      json,
+      const ['items', 'order_items', 'orderItems', 'products', 'lines'],
+    );
+    final statusHistoryRaw = _firstNonNull(
+      json,
+      const ['status_history', 'statusHistory', 'tracking_history', 'history'],
+    );
+
     return Order(
-      id: json['id'] is String ? int.parse(json['id']) : json['id'] as int,
-      customerId: json['customer_id'] != null 
-          ? (json['customer_id'] is String ? int.parse(json['customer_id']) : json['customer_id'] as int)
-          : null,
-      customerName: json['customer_name'] as String? ?? '',
-      customerPhone: json['customer_phone'] as String? ?? '',
-      customerLocation: json['customer_location'] as String? ?? '',
-      subtotal: _parseDouble(json['subtotal']),
-      shippingFee: _parseDouble(json['shipping_fee']),
-      total: _parseDouble(json['total']),
-      status: json['status'] as String? ?? 'pending',
+      id: _parseInt(
+            _firstNonNull(
+              json,
+              const ['id', 'order_id', 'orderId', 'order_number', 'number'],
+            ),
+          ) ??
+          0,
+      customerId: _parseInt(
+        _firstNonNull(json, const ['customer_id', 'customerId']),
+      ),
+      customerName: _firstNonNull(
+            json,
+            const ['customer_name', 'customerName', 'full_name', 'name'],
+          ) as String? ??
+          '',
+      customerPhone: _firstNonNull(
+            json,
+            const ['customer_phone', 'customerPhone', 'phone', 'mobile'],
+          ) as String? ??
+          '',
+      customerLocation: _firstNonNull(
+            json,
+            const [
+              'customer_location',
+              'customerLocation',
+              'location',
+              'address'
+            ],
+          ) as String? ??
+          '',
+      subtotal: _parseDouble(
+        _firstNonNull(
+          json,
+          const ['subtotal', 'sub_total', 'items_subtotal', 'itemsSubtotal'],
+        ),
+      ),
+      shippingFee: _parseDouble(
+        _firstNonNull(
+          json,
+          const [
+            'shipping_fee',
+            'shippingFee',
+            'delivery_fee',
+            'deliveryFee',
+            'shipping_cost',
+            'base_fee',
+          ],
+        ),
+      ),
+      total: _parseDouble(
+        _firstNonNull(
+          json,
+          const [
+            'total',
+            'total_amount',
+            'totalAmount',
+            'grand_total',
+            'grandTotal',
+            'final_total',
+            'amount',
+          ],
+        ),
+      ),
+      status:
+          _firstNonNull(json, const ['status', 'order_status', 'orderStatus'])
+                  as String? ??
+              'pending',
       notes: json['notes'] as String?,
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at'] as String)
-          : DateTime.now(),
-      items: (json['items'] as List<dynamic>?)
-          ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [],
-      statusHistory: (json['statusHistory'] as List<dynamic>?)
-          ?.map((e) => OrderStatusHistory.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [],
+      createdAt: _parseDateTime(
+            _firstNonNull(
+              json,
+              const ['created_at', 'createdAt', 'order_date', 'date'],
+            ),
+          ) ??
+          DateTime.now(),
+      items: (itemsRaw is List)
+          ? itemsRaw
+              .whereType<Map>()
+              .map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
+      statusHistory: (statusHistoryRaw is List)
+          ? statusHistoryRaw
+              .whereType<Map>()
+              .map((e) =>
+                  OrderStatusHistory.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
     );
   }
 
@@ -63,6 +147,33 @@ class Order {
     if (value is int) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      final cleaned = value.replaceAll('#', '').trim();
+      return int.tryParse(cleaned);
+    }
+    return null;
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  static dynamic _firstNonNull(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      if (json.containsKey(key) && json[key] != null) {
+        return json[key];
+      }
+    }
+    return null;
   }
 
   String get statusAr {
@@ -107,14 +218,55 @@ class OrderItem {
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
+    final productRaw = json['product'];
+    final productMap =
+        productRaw is Map ? Map<String, dynamic>.from(productRaw) : null;
+
     return OrderItem(
-      id: json['id'] is String ? int.parse(json['id']) : json['id'] as int,
-      productId: json['product_id'] is String ? int.parse(json['product_id']) : json['product_id'] as int,
-      productName: json['product_name'] as String? ?? json['name'] as String? ?? '',
-      productImage: json['product_image'] as String? ?? json['image'] as String?,
-      quantity: json['quantity'] is String ? int.parse(json['quantity']) : json['quantity'] as int,
-      unitPrice: Order._parseDouble(json['unit_price'] ?? json['price']),
-      subtotal: Order._parseDouble(json['subtotal']),
+      id: Order._parseInt(
+            Order._firstNonNull(json, const ['id', 'item_id', 'itemId']),
+          ) ??
+          0,
+      productId: Order._parseInt(
+            Order._firstNonNull(
+              json,
+              const ['product_id', 'productId'],
+            ),
+          ) ??
+          Order._parseInt(productMap?['id']) ??
+          0,
+      productName: (Order._firstNonNull(
+                json,
+                const ['product_name', 'productName', 'name', 'title'],
+              ) ??
+              productMap?['name_en'] ??
+              productMap?['name_ar'] ??
+              productMap?['name']) as String? ??
+          '',
+      productImage: (Order._firstNonNull(
+            json,
+            const ['product_image', 'productImage', 'image', 'image_url'],
+          ) ??
+          productMap?['image_url'] ??
+          productMap?['image']) as String?,
+      quantity: Order._parseInt(
+            Order._firstNonNull(json, const ['quantity', 'qty', 'count']),
+          ) ??
+          1,
+      unitPrice: Order._parseDouble(
+        Order._firstNonNull(
+              json,
+              const ['unit_price', 'unitPrice', 'price'],
+            ) ??
+            productMap?['price'],
+      ),
+      subtotal: Order._parseDouble(
+        Order._firstNonNull(
+              json,
+              const ['subtotal', 'line_total', 'lineTotal', 'total'],
+            ) ??
+            productMap?['price'],
+      ),
     );
   }
 }
@@ -136,10 +288,18 @@ class OrderStatusHistory {
 
   factory OrderStatusHistory.fromJson(Map<String, dynamic> json) {
     return OrderStatusHistory(
-      id: json['id'] is String ? int.parse(json['id']) : json['id'] as int,
-      status: json['status'] as String,
+      id: Order._parseInt(
+              Order._firstNonNull(json, const ['id', 'history_id'])) ??
+          0,
+      status: (Order._firstNonNull(json, const ['status', 'order_status'])
+              as String?) ??
+          'pending',
       notes: json['notes'] as String?,
-      changedAt: DateTime.parse(json['changed_at'] as String),
+      changedAt: Order._parseDateTime(
+            Order._firstNonNull(
+                json, const ['changed_at', 'changedAt', 'created_at']),
+          ) ??
+          DateTime.now(),
       changedByName: json['changed_by_name'] as String?,
     );
   }

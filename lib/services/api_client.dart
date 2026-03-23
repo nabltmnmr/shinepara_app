@@ -334,7 +334,8 @@ class ApiClient {
       final serverError = responseData is Map ? responseData['error'] : null;
 
       if (statusCode == 401) {
-        throw Exception('جلسة تسجيل الدخول منتهية. يرجى تسجيل الدخول مرة أخرى.');
+        throw Exception(
+            'جلسة تسجيل الدخول منتهية. يرجى تسجيل الدخول مرة أخرى.');
       }
       if (statusCode == 403) {
         throw Exception(
@@ -350,10 +351,12 @@ class ApiClient {
         throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
       }
       if (e.type == DioExceptionType.connectionError) {
-        throw Exception('تعذر الاتصال بالشبكة. تحقق من الإنترنت ثم حاول مرة أخرى.');
+        throw Exception(
+            'تعذر الاتصال بالشبكة. تحقق من الإنترنت ثم حاول مرة أخرى.');
       }
 
-      throw Exception(serverError?.toString() ?? 'فشل حذف الحساب. يرجى المحاولة مرة أخرى.');
+      throw Exception(
+          serverError?.toString() ?? 'فشل حذف الحساب. يرجى المحاولة مرة أخرى.');
     }
   }
 
@@ -500,7 +503,14 @@ class ApiClient {
         'paymentMethod': 'COD',
         if (couponCode != null) 'couponCode': couponCode,
       });
-      return Order.fromJson(response.data['order'] as Map<String, dynamic>);
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final orderData = data['order'] ?? data['data'] ?? data;
+        if (orderData is Map<String, dynamic>) {
+          return Order.fromJson(orderData);
+        }
+      }
+      throw Exception('استجابة الطلب غير متوقعة');
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {
         throw Exception(e.response!.data['error'] ?? 'فشل إنشاء الطلب');
@@ -512,10 +522,21 @@ class ApiClient {
   Future<List<Order>> getOrders() async {
     try {
       final response = await _dio.get('/api/orders');
-      if (response.data is List) {
-        return (response.data as List)
-            .map((e) => Order.fromJson(e as Map<String, dynamic>))
+      final data = response.data;
+      if (data is List) {
+        return data
+            .whereType<Map>()
+            .map((e) => Order.fromJson(Map<String, dynamic>.from(e)))
             .toList();
+      }
+      if (data is Map<String, dynamic>) {
+        final listData = data['orders'] ?? data['data'] ?? data['results'];
+        if (listData is List) {
+          return listData
+              .whereType<Map>()
+              .map((e) => Order.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        }
       }
       return [];
     } catch (e) {
@@ -526,7 +547,14 @@ class ApiClient {
   Future<Order?> getOrderById(int id) async {
     try {
       final response = await _dio.get('/api/orders/$id');
-      return Order.fromJson(response.data as Map<String, dynamic>);
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final orderData = data['order'] ?? data['data'] ?? data;
+        if (orderData is Map<String, dynamic>) {
+          return Order.fromJson(orderData);
+        }
+      }
+      return null;
     } catch (e) {
       return null;
     }
