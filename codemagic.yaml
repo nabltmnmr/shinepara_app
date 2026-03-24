@@ -53,9 +53,9 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.shinepara.app
+        bundle_identifier: com.shinepara.shineparaApp
       vars:
-        BUNDLE_ID: "com.shinepara.app"
+        BUNDLE_ID: "com.shinepara.shineparaApp"
         # Required for auto-incrementing iOS build numbers.
         # Set this in Codemagic workflow Environment variables:
         # - APP_STORE_APP_ID: numeric Apple ID from App Store Connect (App Information).
