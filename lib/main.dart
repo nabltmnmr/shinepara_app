@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
@@ -12,9 +13,75 @@ import 'features/splash/video_splash_screen.dart';
 import 'services/push_notification_service.dart';
 import 'services/providers.dart';
 
+const String _ordersChannelId = 'shinepara_orders';
+const String _ordersChannelName = 'إشعارات الطلبات';
+const String _ordersChannelDescription = 'إشعارات حالة الطلبات والعروض';
+
+final FlutterLocalNotificationsPlugin _backgroundNotifications =
+    FlutterLocalNotificationsPlugin();
+bool _backgroundNotificationsInitialized = false;
+
+Future<void> _ensureBackgroundNotificationsReady() async {
+  if (_backgroundNotificationsInitialized) return;
+
+  const AndroidInitializationSettings androidSettings =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
+  const InitializationSettings initSettings = InitializationSettings(
+    android: androidSettings,
+    iOS: iosSettings,
+  );
+
+  await _backgroundNotifications.initialize(initSettings);
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    _ordersChannelId,
+    _ordersChannelName,
+    description: _ordersChannelDescription,
+    importance: Importance.high,
+  );
+  await _backgroundNotifications
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+
+  _backgroundNotificationsInitialized = true;
+}
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await _ensureBackgroundNotificationsReady();
+
+  // For data-only pushes, Android/iOS won't display a system banner by default.
+  final title = message.notification?.title ?? message.data['title']?.toString();
+  final body = message.notification?.body ??
+      message.data['message']?.toString() ??
+      message.data['body']?.toString();
+
+  if (message.notification == null && (title != null || body != null)) {
+    await _backgroundNotifications.show(
+      message.messageId.hashCode ^ DateTime.now().millisecondsSinceEpoch,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _ordersChannelId,
+          _ordersChannelName,
+          channelDescription: _ordersChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: message.data.toString(),
+    );
+  }
+
   debugPrint('Background message received: ${message.messageId}');
 }
 

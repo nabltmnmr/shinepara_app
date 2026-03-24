@@ -8,6 +8,10 @@ class PushNotificationService {
   factory PushNotificationService() => _instance;
   PushNotificationService._internal();
 
+  static const String _ordersChannelId = 'shinepara_orders';
+  static const String _ordersChannelName = 'إشعارات الطلبات';
+  static const String _ordersChannelDescription = 'إشعارات حالة الطلبات والعروض';
+
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = 
       FlutterLocalNotificationsPlugin();
@@ -103,10 +107,16 @@ class PushNotificationService {
       },
     );
 
+    await _messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'shinepara_orders',
-      'إشعارات الطلبات',
-      description: 'إشعارات حالة الطلبات والعروض',
+      _ordersChannelId,
+      _ordersChannelName,
+      description: _ordersChannelDescription,
       importance: Importance.high,
     );
 
@@ -114,23 +124,32 @@ class PushNotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
     print('Foreground message: ${message.notification?.title}');
 
     RemoteNotification? notification = message.notification;
+    final String? title = notification?.title ?? message.data['title']?.toString();
+    final String? body = notification?.body ??
+        message.data['message']?.toString() ??
+        message.data['body']?.toString();
 
-    if (notification != null && !kIsWeb) {
+    if (!kIsWeb && (title != null || body != null)) {
       _localNotifications.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
+        message.messageId.hashCode ^ DateTime.now().millisecondsSinceEpoch,
+        title,
+        body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'shinepara_orders',
-            'إشعارات الطلبات',
-            channelDescription: 'إشعارات حالة الطلبات والعروض',
+            _ordersChannelId,
+            _ordersChannelName,
+            channelDescription: _ordersChannelDescription,
             importance: Importance.high,
             priority: Priority.high,
             icon: '@mipmap/ic_launcher',
