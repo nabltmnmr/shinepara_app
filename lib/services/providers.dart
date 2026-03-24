@@ -17,6 +17,7 @@ import '../models/ai_recommendation.dart';
 import '../models/skin_scan.dart';
 import '../models/product_review.dart';
 import 'api_client.dart';
+import 'push_notification_service.dart';
 
 const String apiBaseUrl = 'https://shine-care.com';
 
@@ -244,6 +245,9 @@ class AuthNotifier extends StateNotifier<User?> {
       if (success) {
         final user = await apiClient.getCurrentUser();
         state = user;
+        if (user != null) {
+          await PushNotificationService().onUserLoggedIn();
+        }
         return user != null;
       }
       state = null;
@@ -262,6 +266,7 @@ class AuthNotifier extends StateNotifier<User?> {
     try {
       final user = await apiClient.login(email: email, password: password);
       state = user;
+      await PushNotificationService().onUserLoggedIn();
     } finally {
       isLoading = false;
     }
@@ -285,6 +290,7 @@ class AuthNotifier extends StateNotifier<User?> {
       );
       final user = await apiClient.login(email: email, password: password);
       state = user;
+      await PushNotificationService().onUserLoggedIn();
     } finally {
       isLoading = false;
     }
@@ -303,6 +309,7 @@ class AuthNotifier extends StateNotifier<User?> {
         name: name,
       );
       state = user;
+      await PushNotificationService().onUserLoggedIn();
     } finally {
       isLoading = false;
     }
