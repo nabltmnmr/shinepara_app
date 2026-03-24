@@ -26,8 +26,8 @@ class PushNotificationService {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print('Push notification permission granted');
-      
-      String? token = await _messaging.getToken();
+
+      String? token = await _getTokenSafely(waitForApnsOnIos: true);
       print('FCM Token: $token');
       
       if (token != null) {
@@ -73,14 +73,45 @@ class PushNotificationService {
 
   String? _pendingToken;
 
+  Future<String?> _getTokenSafely({bool waitForApnsOnIos = false}) async {
+    try {
+      if (!kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.iOS &&
+          waitForApnsOnIos) {
+        String? apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          // APNS token can arrive slightly after app startup/login on iOS.
+          for (int i = 0; i < 8 && apnsToken == null; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+            apnsToken = await _messaging.getAPNSToken();
+          }
+        }
+        if (apnsToken == null) {
+          print('APNS token is not ready yet; skip FCM token fetch for now');
+          return null;
+        }
+      }
+      return await _messaging.getToken();
+    } catch (e) {
+      print('Failed to get FCM token: $e');
+      return null;
+    }
+  }
+
   Future<void> onUserLoggedIn() async {
-    if (_pendingToken != null) {
-      await _sendTokenToServer(_pendingToken!);
-    } else {
-      String? token = await _messaging.getToken();
+    try {
+      if (_pendingToken != null) {
+        await _sendTokenToServer(_pendingToken!);
+        return;
+      }
+      String? token = await _getTokenSafely(waitForApnsOnIos: true);
       if (token != null) {
+        _pendingToken = token;
         await _sendTokenToServer(token);
       }
+    } catch (e) {
+      // Push setup should never block login flow.
+      print('Skipping token sync on login: $e');
     }
   }
 
@@ -174,8 +205,9 @@ class PushNotificationService {
   }
 
   Future<void> resendTokenToServer() async {
-    String? token = await _messaging.getToken();
+    final token = await _getTokenSafely(waitForApnsOnIos: true);
     if (token != null) {
+      _pendingToken = token;
       await _sendTokenToServer(token);
     }
   }
