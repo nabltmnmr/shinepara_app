@@ -1,7 +1,7 @@
 name: shinepara_app
 description: Shine AI-Powered E-commerce App - Arabic skincare products with AI recommendations
 publish_to: 'none'
-version: 1.0.0+14
+version: 1.0.0+15
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

@@ -129,14 +129,32 @@ class ShineparaApp extends ConsumerStatefulWidget {
   ConsumerState<ShineparaApp> createState() => _ShineparaAppState();
 }
 
-class _ShineparaAppState extends ConsumerState<ShineparaApp> {
+class _ShineparaAppState extends ConsumerState<ShineparaApp>
+    with WidgetsBindingObserver {
   bool _isInitialized = false;
   bool _videoDone = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bootstrap();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final isLoggedIn = ref.read(authProvider) != null;
+      if (isLoggedIn) {
+        PushNotificationService().resendTokenToServer();
+      }
+    }
   }
 
   Future<void> _bootstrap() async {
