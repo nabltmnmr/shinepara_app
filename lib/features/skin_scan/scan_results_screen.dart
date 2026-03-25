@@ -800,9 +800,10 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorText = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ في إنشاء الروتين'),
+            content: Text(errorText.isEmpty ? 'حدث خطأ في إنشاء الروتين' : errorText),
             backgroundColor: AppColors.error,
           ),
         );

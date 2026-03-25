@@ -751,15 +751,43 @@ class ApiClient {
     required double budget,
   }) async {
     try {
+      final budgetInt = budget.round();
       final response = await _dio.post(
         '/api/skin-scan/$scanId/routine',
-        data: {'budget': budget},
+        data: {
+          'budget': budgetInt,
+          // Backward/forward compatibility with backend field naming.
+          'budget_iqd': budgetInt,
+        },
         options: Options(
           sendTimeout: const Duration(seconds: 60),
           receiveTimeout: const Duration(seconds: 60),
         ),
       );
-      return response.data['routine'] as String? ?? '';
+
+      final data = response.data;
+      if (data is String && data.trim().isNotEmpty) {
+        return data.trim();
+      }
+      if (data is Map<String, dynamic>) {
+        final direct = data['routine'];
+        if (direct is String && direct.trim().isNotEmpty) {
+          return direct.trim();
+        }
+        if (direct is Map<String, dynamic>) {
+          final nestedText = direct['routine_text'] ?? direct['text'];
+          if (nestedText is String && nestedText.trim().isNotEmpty) {
+            return nestedText.trim();
+          }
+        }
+
+        final routineText = data['routine_text'] ?? data['text'];
+        if (routineText is String && routineText.trim().isNotEmpty) {
+          return routineText.trim();
+        }
+      }
+
+      throw Exception('استجابة إنشاء الروتين غير متوقعة');
     } on DioException catch (e) {
       if (e.response?.data != null && e.response!.data is Map) {
         throw Exception(e.response!.data['error'] ?? 'فشل إنشاء الروتين');
