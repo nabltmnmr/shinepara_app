@@ -158,12 +158,12 @@ class _ShineparaAppState extends ConsumerState<ShineparaApp>
   }
 
   Future<void> _bootstrap() async {
-    // Never let startup services block the first frame.
+    // Keep startup responsive: only block briefly, finish the rest in background.
     bool firebaseReady = false;
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
-      ).timeout(const Duration(seconds: 20));
+      ).timeout(const Duration(seconds: 8));
       firebaseReady = true;
     } catch (e, st) {
       debugPrint('Firebase init failed: $e');
@@ -171,32 +171,34 @@ class _ShineparaAppState extends ConsumerState<ShineparaApp>
     }
 
     if (firebaseReady) {
-      try {
-        await PushNotificationService()
-            .init()
-            .timeout(const Duration(seconds: 25));
-      } catch (e, st) {
+      // Do not delay app launch for push setup.
+      PushNotificationService()
+          .init()
+          .timeout(const Duration(seconds: 20))
+          .catchError((Object e, StackTrace st) {
         debugPrint('Push init failed: $e');
         debugPrintStack(stackTrace: st);
-      }
+      });
     }
 
-    try {
-      await ref
-          .read(authProvider.notifier)
-          .tryAutoLogin()
-          .timeout(const Duration(seconds: 10));
-    } catch (e) {
+    final authInit = ref
+        .read(authProvider.notifier)
+        .tryAutoLogin()
+        .timeout(const Duration(seconds: 6))
+        .catchError((Object e, StackTrace st) {
       debugPrint('Auto login failed: $e');
-    }
-    try {
-      await ref
-          .read(appLocaleProvider.notifier)
-          .load()
-          .timeout(const Duration(seconds: 5));
-    } catch (e) {
+      return false;
+    });
+    final localeInit = ref
+        .read(appLocaleProvider.notifier)
+        .load()
+        .timeout(const Duration(seconds: 3))
+        .catchError((Object e, StackTrace st) {
       debugPrint('Locale load failed: $e');
-    }
+      return;
+    });
+
+    await Future.wait([authInit, localeInit]);
 
     if (mounted) {
       setState(() {
@@ -264,9 +266,24 @@ class _InitHoldScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Color(0xFF2D1714),
-      body: SizedBox.expand(),
+      body: SizedBox.expand(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              CircularProgressIndicator(color: Color(0xFFFF5A1F)),
+              SizedBox(height: 14),
+              Text(
+                'جاري التحميل...',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+                textDirection: TextDirection.rtl,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
