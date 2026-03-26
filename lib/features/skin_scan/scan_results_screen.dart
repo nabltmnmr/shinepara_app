@@ -8,6 +8,7 @@ import '../../core/widgets/shine_scaffold.dart';
 import '../../core/widgets/shine_glass_panel.dart';
 import '../../core/widgets/shine_primary_button.dart';
 import '../../models/skin_scan.dart';
+import '../../models/product.dart';
 import '../../services/providers.dart';
 import '../../services/api_client.dart';
 import '../ai/services/ai_consent_service.dart';
@@ -25,6 +26,7 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
   double _selectedBudget = 50000;
   bool _isGeneratingRoutine = false;
   String? _generatedRoutine;
+  List<ScanRecommendedProduct> _routineRecommendedProducts = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -77,9 +79,13 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
           if (scan.summary != null) _buildSummaryCard(scan.summary!),
           SizedBox(height: 20),
           _buildRoutineSection(scan),
-          if (scan.recommendedProducts.isNotEmpty) ...[
+          if ((_routineRecommendedProducts.isNotEmpty || scan.recommendedProducts.isNotEmpty)) ...[
             SizedBox(height: 20),
-            _buildRecommendedProducts(scan),
+            _buildRecommendedProducts(
+              _routineRecommendedProducts.isNotEmpty
+                  ? _routineRecommendedProducts
+                  : scan.recommendedProducts,
+            ),
           ],
           SizedBox(height: 16),
           _buildDisclaimerBanner(),
@@ -633,9 +639,8 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
     );
   }
 
-  Widget _buildRecommendedProducts(SkinScan scan) {
+  Widget _buildRecommendedProducts(List<ScanRecommendedProduct> products) {
     final baseUrl = ApiClient.getBaseUrl();
-    final products = scan.recommendedProducts;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,7 +651,9 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'بناءً على نتائج فحصك',
+          _routineRecommendedProducts.isNotEmpty
+              ? 'بناءً على ميزانيتك والروتين المُنشأ'
+              : 'بناءً على نتائج فحصك',
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
         ),
         const SizedBox(height: 12),
@@ -733,6 +740,64 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
                                 ),
                                 textDirection: TextDirection.rtl,
                               ),
+                              const SizedBox(height: 4),
+                              InkWell(
+                                onTap: () {
+                                  final cartNotifier =
+                                      ref.read(cartProvider.notifier);
+                                  cartNotifier.addToCart(
+                                    Product(
+                                      id: product.id,
+                                      nameAr: product.nameAr,
+                                      nameEn: product.nameEn ?? product.nameAr,
+                                      brandId: 0,
+                                      categoryId: '',
+                                      brandName: product.brandName,
+                                      descriptionAr:
+                                          product.shortDescription ?? '',
+                                      descriptionEn:
+                                          product.shortDescription ?? '',
+                                      price: product.price,
+                                      imageUrl: product.imageUrl,
+                                    ),
+                                  );
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'تمت إضافة ${product.nameAr} إلى السلة'),
+                                        backgroundColor: AppColors.success,
+                                      ),
+                                    );
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.primary.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_shopping_cart,
+                                          size: 12, color: AppColors.primary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'أضف للسلة',
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          fontSize: 10,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -791,12 +856,15 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
     setState(() => _isGeneratingRoutine = true);
 
     try {
-      final routine = await ref.read(skinScanServiceProvider).generateRoutine(
+      final result = await ref.read(skinScanServiceProvider).generateRoutine(
         scanId: scanId,
         budget: _selectedBudget,
       );
       if (mounted) {
-        setState(() => _generatedRoutine = routine);
+        setState(() {
+          _generatedRoutine = result.routine;
+          _routineRecommendedProducts = result.recommendedProducts;
+        });
       }
     } catch (e) {
       if (mounted) {

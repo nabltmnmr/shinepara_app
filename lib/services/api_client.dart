@@ -13,6 +13,17 @@ import '../models/user.dart';
 import '../models/notification.dart';
 import '../models/shipping_settings.dart';
 import '../models/ai_recommendation.dart';
+import '../models/skin_scan.dart';
+
+class RoutineGenerationResult {
+  final String routine;
+  final List<ScanRecommendedProduct> recommendedProducts;
+
+  const RoutineGenerationResult({
+    required this.routine,
+    this.recommendedProducts = const [],
+  });
+}
 
 class ApiClient {
   final Dio _dio;
@@ -746,7 +757,7 @@ class ApiClient {
     }
   }
 
-  Future<String> generateRoutine({
+  Future<RoutineGenerationResult> generateRoutine({
     required int scanId,
     required double budget,
   }) async {
@@ -767,23 +778,61 @@ class ApiClient {
 
       final data = response.data;
       if (data is String && data.trim().isNotEmpty) {
-        return data.trim();
+        return RoutineGenerationResult(routine: data.trim());
       }
       if (data is Map<String, dynamic>) {
+        List<ScanRecommendedProduct> parseProducts(dynamic source) {
+          if (source is! List) return const [];
+          return source
+              .whereType<Map>()
+              .map((e) => ScanRecommendedProduct.fromJson(
+                    Map<String, dynamic>.from(e),
+                  ))
+              .toList();
+        }
+
+        List<ScanRecommendedProduct> extractProducts(Map<String, dynamic> body) {
+          final fromRecommendations = body['recommendations'];
+          if (fromRecommendations is Map<String, dynamic>) {
+            final products = parseProducts(fromRecommendations['products']);
+            if (products.isNotEmpty) return products;
+          }
+          final direct = parseProducts(body['products']);
+          if (direct.isNotEmpty) return direct;
+          final alt = parseProducts(body['recommended_products']);
+          if (alt.isNotEmpty) return alt;
+          final routineAny = body['routine'];
+          if (routineAny is Map<String, dynamic>) {
+            final nested = parseProducts(routineAny['products']);
+            if (nested.isNotEmpty) return nested;
+          }
+          return const [];
+        }
+
+        final products = extractProducts(data);
         final direct = data['routine'];
         if (direct is String && direct.trim().isNotEmpty) {
-          return direct.trim();
+          return RoutineGenerationResult(
+            routine: direct.trim(),
+            recommendedProducts: products,
+          );
         }
         if (direct is Map<String, dynamic>) {
           final nestedText = direct['routine_text'] ?? direct['text'];
           if (nestedText is String && nestedText.trim().isNotEmpty) {
-            return nestedText.trim();
+            return RoutineGenerationResult(
+              routine: nestedText.trim(),
+              recommendedProducts: products,
+            );
           }
         }
 
         final routineText = data['routine_text'] ?? data['text'];
         if (routineText is String && routineText.trim().isNotEmpty) {
-          return routineText.trim();
+          return RoutineGenerationResult(
+            routine: routineText.trim(),
+            recommendedProducts: products,
+          );
         }
       }
 

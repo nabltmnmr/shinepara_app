@@ -540,7 +540,7 @@ class SkinScanService {
     return SkinScan.fromJson(data);
   }
 
-  Future<String> generateRoutine({
+  Future<RoutineGenerationResult> generateRoutine({
     required int scanId,
     required double budget,
   }) async {
