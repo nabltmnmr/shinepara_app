@@ -25,8 +25,10 @@ class ProductListScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductListScreenState extends ConsumerState<ProductListScreen> {
+  static const int _itemsPerPage = 30;
   late final TextEditingController _searchController;
   String _localQuery = '';
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -43,7 +45,23 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 
   void _applySearch(String value) {
     final trimmed = value.trim();
-    setState(() => _localQuery = trimmed);
+    setState(() {
+      _localQuery = trimmed;
+      _currentPage = 1;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ProductListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final filtersChanged = oldWidget.categoryId != widget.categoryId ||
+        oldWidget.brandId != widget.brandId ||
+        oldWidget.searchQuery != widget.searchQuery;
+    if (filtersChanged) {
+      _localQuery = (widget.searchQuery ?? '').trim();
+      _searchController.text = _localQuery;
+      _currentPage = 1;
+    }
   }
 
   @override
@@ -114,25 +132,77 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           ),
                         );
                       }
-                      return GridView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio:
-                              0.56, // bigger/taller cards (match reference)
-                        ),
-                        itemCount: productList.length,
-                        itemBuilder: (context, index) {
-                          final product = productList[index];
-                          return ShineProductCard(
-                            product: product,
-                            onTap: () => context.push('/product/${product.id}'),
-                          );
-                        },
+                      final totalPages = (productList.length / _itemsPerPage).ceil();
+                      final safePage = _currentPage.clamp(1, totalPages);
+                      final start = (safePage - 1) * _itemsPerPage;
+                      final end = (start + _itemsPerPage).clamp(0, productList.length);
+                      final pageItems = productList.sublist(start, end);
+
+                      if (safePage != _currentPage) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          setState(() => _currentPage = safePage);
+                        });
+                      }
+
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: GridView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio:
+                                    0.56, // bigger/taller cards (match reference)
+                              ),
+                              itemCount: pageItems.length,
+                              itemBuilder: (context, index) {
+                                final product = pageItems[index];
+                                return ShineProductCard(
+                                  product: product,
+                                  onTap: () => context.push('/product/${product.id}'),
+                                );
+                              },
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: safePage > 1
+                                        ? () => setState(() => _currentPage = safePage - 1)
+                                        : null,
+                                    icon: const Icon(Icons.navigate_before),
+                                    label: const Text('السابق'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'الصفحة $safePage من $totalPages',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: safePage < totalPages
+                                        ? () => setState(() => _currentPage = safePage + 1)
+                                        : null,
+                                    icon: const Icon(Icons.navigate_next),
+                                    label: const Text('التالي'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       );
                     },
                     loading: () => const Center(

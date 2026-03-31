@@ -847,7 +847,7 @@ class _ScanResultsScreenState extends ConsumerState<ScanResultsScreen> {
     if (!allowed) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('AI action cancelled: consent not granted.')),
+          const SnackBar(content: Text('تم إلغاء العملية: لم يتم منح موافقة الذكاء الاصطناعي.')),
         );
       }
       return;

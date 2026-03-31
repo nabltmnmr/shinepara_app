@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import '../../core/localization/shine_strings.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/utils/iqd_currency.dart';
@@ -55,11 +56,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   children: [
                     Icon(Icons.error_outline, size: 64, color: AppColors.error),
                     const SizedBox(height: 16),
-                    Text('Product not found', style: AppTextStyles.titleMedium),
+                    Text(context.tr('product_not_found'),
+                        style: AppTextStyles.titleMedium),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => context.safeGoBack(),
-                      child: const Text('Back'),
+                      child: Text(context.tr('back')),
                     ),
                   ],
                 ),
@@ -238,25 +240,25 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 child: Row(
                                   children: [
                                     _SegmentTab(
-                                      label: 'Description',
+                                      label: context.tr('tab_description'),
                                       selected: _tabIndex == 0,
                                       onTap: () =>
                                           setState(() => _tabIndex = 0),
                                     ),
                                     _SegmentTab(
-                                      label: 'How to Use',
+                                      label: context.tr('tab_how_to_use'),
                                       selected: _tabIndex == 1,
                                       onTap: () =>
                                           setState(() => _tabIndex = 1),
                                     ),
                                     _SegmentTab(
-                                      label: 'Ingredients',
+                                      label: context.tr('tab_ingredients'),
                                       selected: _tabIndex == 2,
                                       onTap: () =>
                                           setState(() => _tabIndex = 2),
                                     ),
                                     _SegmentTab(
-                                      label: 'Reviews',
+                                      label: context.tr('tab_reviews'),
                                       selected: _tabIndex == 3,
                                       onTap: () =>
                                           setState(() => _tabIndex = 3),
@@ -285,12 +287,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               children: [
                 Icon(Icons.error_outline, size: 64, color: AppColors.error),
                 const SizedBox(height: 16),
-                Text('Failed to load product', style: AppTextStyles.bodyMedium),
+                Text(context.tr('failed_to_load_product'),
+                    style: AppTextStyles.bodyMedium),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () =>
                       ref.invalidate(productDetailProvider(widget.productId)),
-                  child: const Text('Retry'),
+                  child: Text(context.tr('retry')),
                 ),
               ],
             ),
@@ -340,12 +343,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               fontSize: 14,
                             ),
                           ),
-                          child: const Text('View'),
+                          child: Text(context.tr('cart_view')),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Added $qty to bag',
+                            context.trf('cart_added_qty', {'count': '$qty'}),
                             textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -545,7 +548,7 @@ class _BottomActionBarState extends State<_BottomActionBar> {
                       const Icon(Icons.shopping_bag_outlined, size: 22),
                       const SizedBox(width: 10),
                       Text(
-                        'Add to Bag',
+                        context.tr('add_to_cart'),
                         style: AppTextStyles.titleMedium.copyWith(
                           color: AppColors.white,
                           fontWeight: FontWeight.w800,
@@ -669,7 +672,7 @@ class _ReviewsTab extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'No reviews yet. Be the first to review this product.',
+                  context.tr('no_reviews_yet_message'),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.6,
@@ -692,7 +695,7 @@ class _ReviewsTab extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Failed to load reviews.',
+              context.tr('failed_to_load_reviews'),
               style: AppTextStyles.bodyMedium
                   .copyWith(color: AppColors.textSecondary),
             ),
@@ -709,7 +712,7 @@ class _ReviewsTab extends ConsumerWidget {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999)),
                 ),
-                child: const Text('Retry'),
+                child: Text(context.tr('retry')),
               ),
             ),
           ],
@@ -781,7 +784,9 @@ class _ReviewsSummaryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999)),
               ),
               child: Text(
-                isLoggedIn ? 'Write a review' : 'Login to review',
+                isLoggedIn
+                    ? context.tr('write_review')
+                    : context.tr('login_to_review'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.labelLarge.copyWith(
@@ -924,7 +929,7 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
           SnackBar(
             backgroundColor: AppColors.bottomNavBackground,
             content: Text(
-              'Review submitted',
+              context.tr('review_submitted'),
               style: AppTextStyles.bodyMedium
                   .copyWith(color: AppColors.textOffWhite),
             ),
@@ -963,7 +968,7 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Write a review',
+              context.tr('write_a_review'),
               style: AppTextStyles.titleLarge.copyWith(
                 color: AppColors.textOffWhite,
                 fontWeight: FontWeight.w900,
@@ -990,7 +995,7 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
               maxLines: 4,
               textInputAction: TextInputAction.newline,
               decoration: InputDecoration(
-                hintText: 'Share your experience…',
+                hintText: context.tr('share_experience'),
                 hintStyle: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.iconTint.withAlpha(210),
                 ),
@@ -1033,7 +1038,7 @@ class _AddReviewSheetState extends ConsumerState<_AddReviewSheet> {
                           color: AppColors.white,
                         ),
                       )
-                    : const Text('Submit'),
+                    : Text(context.tr('submit')),
               ),
             ),
           ],

@@ -212,7 +212,9 @@ class _CartItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = (item.product.imageUrl ?? '').toString().trim();
-    final name = item.product.nameEn.trim().isNotEmpty ? item.product.nameEn : item.product.nameAr;
+    final name = item.product.nameAr.trim().isNotEmpty
+        ? item.product.nameAr
+        : item.product.nameEn;
     final subtitle = (item.product.categoryName ?? item.product.brandName ?? '').toString().trim();
 
     return Padding(

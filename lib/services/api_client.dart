@@ -796,6 +796,12 @@ class ApiClient {
           if (fromRecommendations is Map<String, dynamic>) {
             final products = parseProducts(fromRecommendations['products']);
             if (products.isNotEmpty) return products;
+            final altProducts =
+                parseProducts(fromRecommendations['recommended_products']);
+            if (altProducts.isNotEmpty) return altProducts;
+          } else {
+            final listRecommendations = parseProducts(fromRecommendations);
+            if (listRecommendations.isNotEmpty) return listRecommendations;
           }
           final direct = parseProducts(body['products']);
           if (direct.isNotEmpty) return direct;
@@ -805,6 +811,13 @@ class ApiClient {
           if (routineAny is Map<String, dynamic>) {
             final nested = parseProducts(routineAny['products']);
             if (nested.isNotEmpty) return nested;
+            final nestedAlt = parseProducts(routineAny['recommended_products']);
+            if (nestedAlt.isNotEmpty) return nestedAlt;
+          }
+          final dataAny = body['data'];
+          if (dataAny is Map<String, dynamic>) {
+            final dataProducts = extractProducts(dataAny);
+            if (dataProducts.isNotEmpty) return dataProducts;
           }
           return const [];
         }

@@ -122,16 +122,32 @@ class ScanRecommendedProduct {
       imgUrl = images[0] as String?;
     } else if (images is String && images.isNotEmpty) {
       imgUrl = images;
+    } else {
+      final direct = json['image_url'] ?? json['imageUrl'] ?? json['image'];
+      if (direct is String && direct.isNotEmpty) {
+        imgUrl = direct;
+      }
+      final thumb =
+          json['thumbnail_url'] ?? json['thumbnailUrl'] ?? json['thumbnail'];
+      if ((imgUrl == null || imgUrl.isEmpty) &&
+          thumb is String &&
+          thumb.isNotEmpty) {
+        imgUrl = thumb;
+      }
     }
 
     List<String> concerns = [];
-    if (json['matchedConcerns'] is List) {
-      concerns = (json['matchedConcerns'] as List).map((e) => e.toString()).toList();
+    final concernsAny = json['matchedConcerns'] ?? json['matched_concerns'];
+    if (concernsAny is List) {
+      concerns = concernsAny.map((e) => e.toString()).toList();
     }
 
     return ScanRecommendedProduct(
-      id: _toInt(json['id']) ?? 0,
-      nameAr: json['name_ar'] as String? ?? json['nameAr'] as String? ?? '',
+      id: _toInt(json['id']) ?? _toInt(json['product_id']) ?? 0,
+      nameAr: json['name_ar'] as String? ??
+          json['nameAr'] as String? ??
+          json['name'] as String? ??
+          '',
       nameEn: json['name_en'] as String? ?? json['nameEn'] as String?,
       brandName: json['brand_name'] as String? ?? json['brandName'] as String?,
       price: _toDouble(json['price']) ?? 0,
@@ -242,17 +258,25 @@ class SkinScan {
 
     // ---- recommendations parsing ----
     List<ScanRecommendedProduct> recommendedProducts = [];
-    final recsAny = json['recommendations'];
-    if (recsAny is Map) {
-      final productsList = recsAny['products'];
-      if (productsList is List) {
-        for (final p in productsList) {
-          if (p is Map) {
-            recommendedProducts.add(ScanRecommendedProduct.fromJson(Map<String, dynamic>.from(p)));
-          }
+    void addProductsFrom(dynamic source) {
+      if (source is! List) return;
+      for (final p in source) {
+        if (p is Map) {
+          recommendedProducts
+              .add(ScanRecommendedProduct.fromJson(Map<String, dynamic>.from(p)));
         }
       }
     }
+
+    final recsAny = json['recommendations'];
+    if (recsAny is Map) {
+      addProductsFrom(recsAny['products']);
+      addProductsFrom(recsAny['recommended_products']);
+    } else if (recsAny is List) {
+      addProductsFrom(recsAny);
+    }
+    addProductsFrom(json['recommended_products']);
+    addProductsFrom(json['products']);
 
     return SkinScan(
       id: id,
